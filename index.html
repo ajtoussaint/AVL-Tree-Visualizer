@@ -207,6 +207,9 @@
             }
 
             //assumes a leaf node is being deleted, need to improve
+            //if deleted node has left children replace with largest left
+            //if no left replace with immediate right (or null if that is null)
+            //including the newly replaced node, check along the path for violations
             delete(value, path){
                 path.unshift(this);
                 if(value <= this.value){
@@ -216,31 +219,31 @@
                         if(this.left.value == value){
                             this.left = null;
                             for(var i = 0; i < path.length; i++){
-                            console.log(path[i].value + ":" + path[i].isValid());
-                            if(!path[i].isValid()){
-                                var k1 = path[i];
-                                //get k2
-                                if(k1.left === path[i-1]){
-                                    var k2 = k1.right;
-                                }else{
-                                    var k2 = k1.left;
+                                console.log(path[i].value + ":" + path[i].isValid());
+                                if(!path[i].isValid()){
+                                    var k1 = path[i];
+                                    //get k2
+                                    if(k1 === this || k1.left === path[i-1]){
+                                        var k2 = k1.right;
+                                    }else{
+                                        var k2 = k1.left;
+                                    }
+                                    //get k3
+                                    var k2l = -1;
+                                    var k2r = -1;
+                                    if(k2.left != null)
+                                        k2l = k2.left.getHeight();
+                                    if(k2.right != null)
+                                        k2r = k2.right.getHeight();
+                                    
+                                    if(k2r >= k2l){
+                                        var k3 = k2.right;
+                                    }else{
+                                        var k3 = k2.left;
+                                    }
+                                    fixViolation(k1,k2,k3);
                                 }
-                                //get k3
-                                var k2l = -1;
-                                var k2r = -1;
-                                if(k2.left != null)
-                                    k2l = k2.left.getHeight();
-                                if(k2.right != null)
-                                    k2r = k2.right.getHeight();
-                                
-                                if(k2r >= k2l){
-                                    var k3 = k2.right;
-                                }else{
-                                    var k3 = k2.left;
-                                }
-                                fixViolation(k1,k2,k3);
                             }
-                        }
                         }else{
                             this.left.delete(value,path);
                         }
