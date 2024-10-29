@@ -6,6 +6,21 @@
     <title>AVL Tree Visualizer</title>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #svgWrap{
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #mainSvg {
+            width: 90vw;
+            height: 80vh;
+            overflow: visible;
+        }
+    </style>
 </head>
 
 <body>
@@ -34,12 +49,26 @@
             Random Tree
         </button>
     </div>
+    <div id="svgWrap">
+        <svg id="mainSvg" width="600px" height="400px">
+            <circle cx="10" cy="10" r="10" fill="green" id="myCircle" />
+        </svg>
+    </div>
     
 
     <script>
+        //https://stackoverflow.com/questions/3642035/jquerys-append-not-working-with-svg-element <-- Source for svg making stuff
+        function addShape(tag, attrs){
+            var el= document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (var k in attrs)
+                el.setAttribute(k, attrs[k]);
+            document.getElementById('mainSvg').appendChild(el);
+        }
+
         $(document).ready(function() {
             $("#insertButton").click(function() {
-                alert("Insert clicked!");
+                //alert("Insert clicked!");
+                addShape("circle", {cx:100, cy: 50, r:40, fill:"blue", id:"myCircle"});
             });
 
             $("#deleteButton").click(function(){
