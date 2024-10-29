@@ -103,7 +103,12 @@
             });
 
             $("#deleteButton").click(function(){
-                alert("Delete clicked!");
+                var value = $("#delete").val();
+                value = parseInt(value, 10);
+                if(root != null){
+                    root.delete(value,[]);
+                }
+                $("#delete").val('');
             });
 
             $("#findButton").click(function(){
@@ -139,7 +144,7 @@
                 if(this.left != null)
                     l = this.left.getHeight();
                 if(this.right != null)
-                    r = this.right.getHegiht();
+                    r = this.right.getHeight();
                 if(l > r){
                     return l + 1;
                 }else{
@@ -153,7 +158,7 @@
                 if(this.left != null)
                     l = this.left.getHeight();
                 if(this.right != null)
-                    r = this.right.getHegiht();
+                    r = this.right.getHeight();
 
                 if(Math.abs(l - r) <= 1){
                     return true
@@ -201,9 +206,83 @@
                 }
             }
 
-            fixViolation(k1, k2, k3){
-                //determine which direction the violation is
-                console.log(k1, k2, k3);
+            //assumes a leaf node is being deleted, need to improve
+            delete(value, path){
+                path.unshift(this);
+                if(value <= this.value){
+                    if(this.left == null){
+                        console.log("Could not delete " + value + " no such node");
+                    }else{
+                        if(this.left.value == value){
+                            this.left = null;
+                            for(var i = 0; i < path.length; i++){
+                            console.log(path[i].value + ":" + path[i].isValid());
+                            if(!path[i].isValid()){
+                                var k1 = path[i];
+                                //get k2
+                                if(k1.left === path[i-1]){
+                                    var k2 = k1.right;
+                                }else{
+                                    var k2 = k1.left;
+                                }
+                                //get k3
+                                var k2l = -1;
+                                var k2r = -1;
+                                if(k2.left != null)
+                                    k2l = k2.left.getHeight();
+                                if(k2.right != null)
+                                    k2r = k2.right.getHeight();
+                                
+                                if(k2r >= k2l){
+                                    var k3 = k2.right;
+                                }else{
+                                    var k3 = k2.left;
+                                }
+                                fixViolation(k1,k2,k3);
+                            }
+                        }
+                        }else{
+                            this.left.delete(value,path);
+                        }
+                    }
+                }else{
+                    //value on right side
+                    if(this.right == null){
+                        console.log("Could not delete " + value + " no such node");
+                    }else{
+                        if(this.right.value == value){
+                            this.right = null;
+                            for(var i = 0; i < path.length; i++){
+                            console.log(path[i].value + ":" + path[i].isValid());
+                            if(!path[i].isValid()){
+                                var k1 = path[i];
+                                //get k2
+                                if(k1.left === path[i-1]){
+                                    var k2 = k1.right;
+                                }else{
+                                    var k2 = k1.left;
+                                }
+                                //get k3
+                                var k2l = -1;
+                                var k2r = -1;
+                                if(k2.left != null)
+                                    k2l = k2.left.getHeight();
+                                if(k2.right != null)
+                                    k2r = k2.right.getHeight();
+                                
+                                if(k2r >= k2l){
+                                    var k3 = k2.right;
+                                }else{
+                                    var k3 = k2.left;
+                                }
+                                fixViolation(k1,k2,k3);
+                            }
+                        }
+                        }else{
+                            this.right.delete(value,path);
+                        }
+                    }
+                }
             }
 
             display(){
@@ -221,6 +300,57 @@
                     this.left.display();
                 if(this.right != null)
                     this.right.display();
+            }
+        }
+
+        function fixViolation(k1, k2, k3){
+            console.log(k1, k2, k3);
+            //find the relationship between k1 and k2
+            var firstIsRight = (k1.right === k2);
+            var secondIsRight = (k2.right === k3);
+            
+            if(firstIsRight && secondIsRight){
+                //Right right rotation
+                console.log("RR rotation");
+                temp = k2.left;
+                k2.left = k1;
+                k1.right = temp;
+                if(root === k1)
+                    root = k2;
+                k2.display();
+            }else if(firstIsRight && !secondIsRight){
+                //Right left rotation
+                console.log("RL rotation");
+                temp1 = k3.left;
+                temp2 = k3.right;
+                k3.left = k1;
+                k3.right = k2;
+                k1.right = temp1;
+                k2.left = temp2;
+                if(root === k1)
+                    root = k3;
+                k3.display();
+            }else if(!firstIsRight && secondIsRight){
+                //Left Right rotation
+                console.log("LR rotation");
+                temp1 = k3.left;
+                temp2 = k3.right;
+                k3.right = k1;
+                k3.left = k2;
+                k2.right = temp1;
+                k1.left = temp2;
+                if(root === k1)
+                    root = k3;
+                k3.display();
+            }else{
+                //Left left rotation
+                console.log("LL rotation");
+                temp = k2.right;
+                k2.right = k1;
+                k1.left = temp;
+                if(root === k1)
+                    root = k2;
+                k2.display();
             }
         }
 
