@@ -51,7 +51,7 @@
     </div>
     <div id="svgWrap">
         <svg id="mainSvg" width="600px" height="400px">
-            <circle cx="10" cy="10" r="10" fill="green" id="myCircle" />
+
         </svg>
     </div>
     
@@ -65,10 +65,41 @@
             document.getElementById('mainSvg').appendChild(el);
         }
 
+        function addText(text, attrs){
+            var el= document.createElementNS('http://www.w3.org/2000/svg', "text");
+            for (var k in attrs)
+                el.setAttribute(k, attrs[k]);
+            
+            el.textContent = text;
+
+            document.getElementById('mainSvg').appendChild(el);
+        }
+
+        const nodeRadius = 40;
+        var root = null;
+        const nodes = [];
+
+        function addNode(value, x, y){
+            addShape("circle", {cx:x, cy:y, r:nodeRadius, stroke:"black", "stroke-width":5, fill:"white", id:"myCircle"});
+            addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"24", "fill":"black"})
+        }
+
         $(document).ready(function() {
             $("#insertButton").click(function() {
-                //alert("Insert clicked!");
-                addShape("circle", {cx:100, cy: 50, r:40, fill:"blue", id:"myCircle"});
+                var w = $("#mainSvg").width();
+                var h = $("#mainSvg").height();
+                //addNode(5, w/2, 0);
+
+                var value = $("#insert").val();
+                value = parseInt(value, 10);
+                const n = new Node(value);
+                if(root == null){
+                    console.log("Adding new node at the root");
+                    root = n;
+                }else{
+                    root.insert(n, []);
+                }
+                $("#insert").val('');
             });
 
             $("#deleteButton").click(function(){
@@ -84,9 +115,115 @@
             });
 
             $("#randomButton").click(function(){
-                alert("Random clicked!");
+                
+                //temporary, displays all the nodes
+                if(root != null)
+                    root.display();
             });
         });
+
+        class Node {
+            constructor(value){
+                this.value = value;
+                this.left = null;
+                this.right = null;
+            }
+
+            getValue(){
+                return this.value;
+            }
+
+            getHeight(){
+                var l = -1;
+                var r = -1;
+                if(this.left != null)
+                    l = this.left.getHeight();
+                if(this.right != null)
+                    r = this.right.getHegiht();
+                if(l > r){
+                    return l + 1;
+                }else{
+                    return r + 1;
+                }
+            }
+
+            isValid(){
+                var l = -1;
+                var r = -1;
+                if(this.left != null)
+                    l = this.left.getHeight();
+                if(this.right != null)
+                    r = this.right.getHegiht();
+
+                if(Math.abs(l - r) <= 1){
+                    return true
+                }else{
+                    return false
+                }
+            }
+
+            insert(n, path){
+                path.unshift(this);
+                if(n.value <= this.value){
+                    if(this.left == null){
+                        console.log("Inserted " + n.value + " as a left child of " + this.value);
+                        path.unshift(n);
+                        console.log(path);
+                        this.left = n;
+
+                        //check for validity
+                        for(var i = 0; i < path.length; i++){
+                            console.log(path[i].value + ":" + path[i].isValid());
+                            if(!path[i].isValid()){
+                                fixViolation(path[i], path[i-1], path[i-2]);
+                            }
+                        }
+                    }else{
+                        this.left.insert(n, path);
+                    }
+                }else{
+                    if(this.right == null){
+                        console.log("Inserted " + n.value + " as a right child of " + this.value);
+                        path.unshift(n);
+                        console.log(path);
+                        this.right = n;
+
+                        //check for validity
+                        for(var i = 0; i < path.length; i++){
+                            console.log(path[i].value + ":" + path[i].isValid());
+                            if(!path[i].isValid()){
+                                fixViolation(path[i], path[i-1], path[i-2]);
+                            }
+                        }
+                    }else{
+                        this.right.insert(n, path);
+                    }
+                }
+            }
+
+            fixViolation(k1, k2, k3){
+                //determine which direction the violation is
+                console.log(k1, k2, k3);
+            }
+
+            display(){
+                var v1 = this.value;
+                var v2 = "null";
+                var v3 = "null";
+
+                if(this.left != null)
+                    v2 = this.left.value;
+                if(this.right != null)
+                    v3 = this.right.value;
+
+                console.log(v1 + ":" + v2 + "," + v3);
+                if(this.left != null)
+                    this.left.display();
+                if(this.right != null)
+                    this.right.display();
+            }
+        }
+
     </script>
 </body>
 </html>
