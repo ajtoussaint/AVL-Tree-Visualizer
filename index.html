@@ -92,12 +92,13 @@
 
                 var value = $("#insert").val();
                 value = parseInt(value, 10);
-                const n = new Node(value);
+                const n = new Node(value, null);
                 if(root == null){
-                    console.log("Adding new node at the root");
+                    console.log("Adding new node at the root: " + n.value);
                     root = n;
+                    root.display();
                 }else{
-                    root.insert(n, []);
+                    root.insert(n);
                 }
                 $("#insert").val('');
             });
@@ -128,10 +129,11 @@
         });
 
         class Node {
-            constructor(value){
+            constructor(value, parent){
                 this.value = value;
                 this.left = null;
                 this.right = null;
+                this.parent = parent;
             }
 
             getValue(){
@@ -152,7 +154,7 @@
                 }
             }
 
-            isValid(){
+            getBalance(){
                 var l = -1;
                 var r = -1;
                 if(this.left != null)
@@ -160,13 +162,85 @@
                 if(this.right != null)
                     r = this.right.getHeight();
 
-                if(Math.abs(l - r) <= 1){
-                    return true
-                }else{
-                    return false
-                }
+                return r - l; //positive = right tree heavy, negative = left tree heavy, 0 = balanced
             }
 
+            validateTree(){
+                console.log("Node of value " + this.value + " is validating...")
+                var l = -1;
+                var r = -1;
+                if(this.left != null)
+                    l = this.left.getHeight();
+                if(this.right != null)
+                    r = this.right.getHeight();
+
+                if(Math.abs(l - r) > 1){
+                    console.log("invalid state found!");
+
+                    //fix the problem at this subtree
+                    var k1 = this;
+                    var k2, k3;
+                    if(l - r > 0){
+                        //left subtree is heavy
+                        k2 = this.left;
+                    }else{
+                        //right subtree is heavy
+                        k2 = this.right;
+                    }
+
+                    var l2 = -1;
+                    var r2 = -1;
+                    if(k2.left != null)
+                        l2 = k2.left.getHeight();
+                    if(k2.right != null)
+                        r2 = k2.right.getHeight();
+
+                    if(l2 - r2 > 0){
+                        //left sub subtree is heavy
+                        k3 = k2.left;
+                    }else{
+                        //right sub subtree is heavy
+                        k3 = k2.right;
+                    }
+
+                    console.log("Nodes: ", k1, k2, k3);
+                    
+                }
+                //have the parent continue validating
+                if(this.parent)
+                    this.parent.validateTree();
+            }
+
+            //starting over using parents
+
+            insert(n){
+                if(n.value <= this.value){
+                    //check left side for insert location
+                    if(this.left == null){
+                        console.log("Inserted " + n.value + " as a left child of " + this.value);
+                        n.parent = this;
+                        this.left = n;
+                        //check for validity
+                        this.validateTree();
+                    }else{
+                        this.left.insert(n);
+                    }
+                }else{
+                    //check right side for insert location
+                    if(this.right == null){
+                        console.log("Inserted " + n.value + " as a right child of " + this.value);
+                        n.parent = this;
+                        this.right = n;
+                        //check for validity
+                        this.validateTree();
+                    }else{
+                        this.right.insert(n);
+                    }
+                }
+                root.display();
+            }
+
+            /*
             insert(n, path){
                 path.unshift(this);
                 if(n.value <= this.value){
@@ -190,8 +264,8 @@
                     if(this.right == null){
                         console.log("Inserted " + n.value + " as a right child of " + this.value);
                         path.unshift(n);
-                        console.log(path);
                         this.right = n;
+                        console.log(path);
 
                         //check for validity
                         for(var i = 0; i < path.length; i++){
@@ -211,6 +285,74 @@
             //if no left replace with immediate right (or null if that is null)
             //including the newly replaced node, check along the path for violations
             delete(value, path){
+                path.unshift(this);
+                console.log("Delete Path checked: ", path);
+                if(value <= this.value){
+                    //investigate left subtree
+                    if(this.left == null){
+                        console.log("Could not delete " + value + " no such node");
+                    }else{
+                        //if there is a left child
+                        if(this.left.value == value){
+                            console.log("Deleting left child");
+                            //if the left child is the node to delete
+                            var toDelete = this.left; //seadep
+                            
+                            if(toDelete.left != null){
+                                //if the left child has a left child get that as the replacement
+                                console.log("Node to delete has a left child");
+                                //get the highest left child of the deleted node and the path to it from the deleted node
+                                var subPath = [];
+                                var check = toDelete.left;
+                                while(check.right != null){
+                                    subPath.push(check);
+                                    check = check.right;
+                                }
+                                //check is now the replacement node for toDelete
+                                //it has no right child and therefore at most 1 left child
+                                //subPath includes everything [left child -> replacement)
+                                console.log("Replacement is:", check);
+                                console.log("subpath is", subPath);
+                                //set right child of check's paretnt to the left child of check
+                                subPath[subPath.length - 1].right = check.left;
+                                //fully replace the node to delete
+                                this.left = check;
+                                check.left = toDelete.left;
+                                check.right = toDelete.right; 
+                                //check is now fully integrated
+                                
+                                //update the path with check and the sub path
+                                for(var i = 0; i< subPath.length; i++)
+                                    path.unshift(subPath.pop());
+                            }else{
+                                //get the right child as the replacement
+                                console.log("node to delete has no left child, replacing with:", toDelete.right);
+                                this.left = toDelete.right;
+                                path.unshift(this.left);
+                            }
+
+                        }else{
+                            //if the left child is not the node to delete
+                            this.left.delete(value, path);
+                        }
+                    }
+                }else{
+                    //investigate right subtree
+                    if(this.right == null){
+                        console.log("Could not delete " + value + " no such node");
+                    }else{
+                        //if there is a right node
+                        if(this.right.value == value){
+                            //if the right child is the node to delete
+                        }else{
+                            //if the right child is not the node to delete
+                            this.right.delete(value, path);
+                        }
+                    }
+                }
+            }
+            */
+            /*delete(value, path){
                 path.unshift(this);
                 if(value <= this.value){
                     if(this.left == null){
@@ -286,8 +428,8 @@
                         }
                     }
                 }
-            }
-
+            }*/
+            
             display(){
                 var v1 = this.value;
                 var v2 = "null";
@@ -348,11 +490,19 @@
             }else{
                 //Left left rotation
                 console.log("LL rotation");
+                console.log("start", k1, k2, root);
                 temp = k2.right;
                 k2.right = k1;
                 k1.left = temp;
-                if(root === k1)
+                
+                if(root === k1){
+                    console.log("Changing root from " + k1.value + " to " + k2.value)
                     root = k2;
+
+                }
+                
+                console.log("end", k1, k2, root);
+
                 k2.display();
             }
         }
