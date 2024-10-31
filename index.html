@@ -364,10 +364,18 @@
                     }
                 }else{
                     //check right side for insert location
+                    message.text(n.value + '>' + this.value);
+                    var rightX = this.getX() + ($("#mainSvg").width() - this.getX())/2;
+                    //move inspector to where the left child would be
+                    await translateElements("#inspector", rightX, 100 + this.getY());
                     if(this.right == null){
-                        console.log("Inserted " + n.value + " as a right child of " + this.value);
+                        message.text("Inserting node right of: " + this.value);
                         n.parent = this;
                         this.right = n;
+                        //move the waiting node to the insertion location
+                        await translateElements(n.class, rightX, 100 + this.getY());
+                        //create a branch between the two
+                        createLine(this.getX() + nodeEdge, this.getY() + nodeEdge, rightX - nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         this.validateTree();
                     }else{
