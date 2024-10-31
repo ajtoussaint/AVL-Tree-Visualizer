@@ -92,8 +92,11 @@
         }
 
         const nodeRadius = 20;
+        const nodeEdge = Math.sqrt(Math.pow(nodeRadius, 2)/2);
+
         var root = null;
-        var nodeIdCounter = 0
+        var nodeIdCounter = 0;
+        var lineIdCounter = 0;
 
         function addNode(value, x, y){
             var nodeClass = "node_" + nodeIdCounter
@@ -101,6 +104,19 @@
             addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"20", "fill":"black", id:"text_" + nodeIdCounter, class:nodeClass});
             nodeIdCounter += 1;
             return "." +nodeClass;
+        }
+
+        function createInspector(){
+            //begins inspector over the root
+            addShape("circle", {cx:$('#mainSvg').width()/2, cy:50, r:nodeRadius + 2.5, stroke:"blue", "stroke-width":5, fill:"none", id:"inspector"});
+            return "#inspector";
+        }
+
+        function createLine(x1, y1, x2, y2){
+            var str = "line_"+lineIdCounter;
+            addShape("line", {x1:x1, y1:y1, x2:x2, y2:y2, stroke:"black", "stroke-width":"3", id:str})
+            lineIdCounter += 1;
+            return str
         }
 
         async function translateElements(identifier, x, y){
@@ -124,11 +140,11 @@
                     }
                 )                    
             });
-            console.log("waiting for animation...");
+            
             await new Promise(r => setTimeout(r,duration));
 
             //after animation is complete clone the elements in the new location and delete the old ones
-            console.log("updating position: " + x + "," + y);
+            console.log("updating position of " + identifier + ": " + x + "," + y);
             els.each((i,p) => {
                 el = $(p);
                 var cl = el.clone();
@@ -147,11 +163,12 @@
         }
 
         $(document).ready(function() {
-            $("#insertButton").click(async function() {
-                const message = $("#message");
+            const message = $("#message");
 
+            $("#insertButton").click(async function() {
                 var value = $("#insert").val();
                 value = parseInt(value, 10);
+                $("#insert").val('');
 
                 //place a node with the value at the staging area
                 var nodeClass = addNode(value, 0, 100);
@@ -166,9 +183,10 @@
                     root = n;
                     root.display();
                 }else{
+                    createInspector();
                     root.insert(n);
                 }
-                $("#insert").val('');
+                
             });
 
             $("#deleteButton").click(function(){
@@ -228,10 +246,9 @@
                 this.right = null;
                 this.parent = parent;
                 this.class = nodeClass;
-            }
-
-            getValue(){
-                return this.value;
+                this.id = this.class.substring(this.class.indexOf('_') + 1)
+                this.leftLineId = null;
+                this.rightLineId = null;
             }
 
             getHeight(){
@@ -259,8 +276,20 @@
                 return r - l; //positive = right tree heavy, negative = left tree heavy, 0 = balanced
             }
 
-            validateTree(){
-                console.log("Node of value " + this.value + " is validating...")
+            getX(){
+                return parseFloat($("#text_" + this.id).attr('x'));
+            }
+
+            getY(){
+                return parseFloat($("#text_" + this.id).attr('y'));
+            }
+
+            async validateTree(){
+                const message = $("#message");
+                message.text("Validating subtree at node " + this.value);
+                //move the inspector to this element for validation
+                await translateElements('#inspector', this.getX(), this.getY());
+
                 var l = -1;
                 var r = -1;
                 if(this.left != null)
@@ -269,7 +298,8 @@
                     r = this.right.getHeight();
 
                 if(Math.abs(l - r) > 1){
-                    console.log("invalid state found!");
+                    $("#inspector").attr("stroke", "red");
+                    message.text("Subtree at node " + this.value + " is invalid!");
 
                     //fix the problem at this subtree
                     var k1 = this;
@@ -302,18 +332,31 @@
                     
                 }
                 //have the parent continue validating
-                if(this.parent)
+                if(this.parent){
                     this.parent.validateTree();
+                }else{
+                    $("#inspector").remove()
+                }
+                    
             }
 
 
-            insert(n){
+            async insert(n){
+                const message = $("#message");
+                message.text('Checking node: ' + this.value + " for insertion spot");
                 if(n.value <= this.value){
                     //check left side for insert location
+                    message.text(n.value + '<=' + this.value);
+                    //move inspector to where the left child would be
+                    await translateElements("#inspector", this.getX() / 2, 100 + this.getY());
                     if(this.left == null){
-                        console.log("Inserted " + n.value + " as a left child of " + this.value);
+                        message.text("Inserting node left of: " + this.value);
                         n.parent = this;
                         this.left = n;
+                        //move the waiting node to the insertion location
+                        await translateElements(n.class, this.getX() / 2, 100 + this.getY());
+                        //create a branch between the two
+                        createLine(this.getX() - nodeEdge, this.getY() + nodeEdge, this.getX()/2 + nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         this.validateTree();
                     }else{
