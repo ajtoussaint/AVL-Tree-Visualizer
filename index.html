@@ -311,15 +311,21 @@
             }else{
                 //Left left rotation
                 console.log("LL rotation");
-                console.log("start", k1, k2, root);
+
                 temp = k2.right;
                 k2.right = k1;
                 k1.left = temp;
+
+                k2.parent = k1.parent;
+                k1.parent = k2;
                 
                 if(root === k1){
                     console.log("Changing root from " + k1.value + " to " + k2.value)
                     root = k2;
-
+                }else if(k2.parent.value < k2.value){
+                    k2.parent.right = k2;
+                }else{
+                    k2.parent.left = k2;
                 }
                 
                 console.log("end", k1, k2, root);
