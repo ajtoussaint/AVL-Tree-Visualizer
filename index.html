@@ -273,6 +273,8 @@
                 temp = k2.left;
                 k2.left = k1;
                 k1.right = temp;
+                if(temp)
+                    temp.parent = k1;
                 
                 k2.parent = k1.parent;
                 k1.parent = k2;
@@ -293,10 +295,27 @@
                 temp2 = k3.right;
                 k3.left = k1;
                 k3.right = k2;
+                
+                k3.parent = k1.parent
+                k1.parent = k3;
+                k2.parent = k3;
+
                 k1.right = temp1;
+                if(temp1)
+                    temp1.parent = k1;
+                
                 k2.left = temp2;
-                if(root === k1)
+                if(temp2)
+                    temp2.parent = k2;
+
+                if(root === k1){
                     root = k3;
+                }else if(k3.parent.value < k3.value){
+                    k3.parent.right = k3;
+                }else{
+                    k3.parent.left = k3;
+                }
+                    
             }else if(!firstIsRight && secondIsRight){
                 //Left Right rotation
                 console.log("LR rotation");
@@ -304,10 +323,26 @@
                 temp2 = k3.right;
                 k3.right = k1;
                 k3.left = k2;
+
+                k3.parent = k1.parent
+                k1.parent = k3;
+                k2.parent = k3;
+
                 k2.right = temp1;
+                if(temp1)
+                    temp1.parent = k2;
+                
                 k1.left = temp2;
-                if(root === k1)
+                if(temp2)
+                    temp2.parent = k1;
+
+                if(root === k1){
                     root = k3;
+                }else if(k3.parent.value < k3.value){
+                    k3.parent.right = k3;
+                }else{
+                    k3.parent.left = k3;
+                }
             }else{
                 //Left left rotation
                 console.log("LL rotation");
@@ -315,6 +350,8 @@
                 temp = k2.right;
                 k2.right = k1;
                 k1.left = temp;
+                if(temp)
+                    temp.parent = k1;
 
                 k2.parent = k1.parent;
                 k1.parent = k2;
@@ -327,8 +364,6 @@
                 }else{
                     k2.parent.left = k2;
                 }
-                
-                console.log("end", k1, k2, root);
 
             }
             console.log("Rotation Complete");
