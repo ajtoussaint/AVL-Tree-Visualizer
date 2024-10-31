@@ -21,33 +21,6 @@
             overflow: visible;
         }
 
-        /*@keyframes move{
-            0% {
-                x:0;
-                cx:0;
-            }
-            100% {
-                x:1000;
-                cx:1000;
-            }
-        }
-
-        @keyframes textMove{
-            0% {
-                transform: translateX(0)
-            }
-            100% {
-                transform: translateX(1000px);
-            }
-        }
-
-        #text_0{
-            animation: textMove 5s;
-        }
-
-        #circle_0{
-            animation: move 5s;
-        }*/
     </style>
 </head>
 
@@ -137,7 +110,7 @@
                 var old_x = el.attr("x") ?? el.attr("cx");
                 var old_y = el.attr("y") ?? el.attr("cy");
 
-                p.animate(
+                const animation = p.animate(
                     [
                         {transform: `translate(0,0)`},
                         {transform: `translate(${x-old_x}px, ${y - old_y}px)`}
@@ -146,24 +119,28 @@
                         duration: duration,
                         fill: 'forwards'
                     }
-                )
-                    
+                )                    
             });
             console.log("waiting for animation...");
             await new Promise(r => setTimeout(r,duration));
 
-            //after animation is complete update the actual values
+            //after animation is complete clone the elements in the new location and delete the old ones
             console.log("updating position: " + x + "," + y);
             els.each((i,p) => {
                 el = $(p);
-                if(el.attr("x") !== undefined){
-                    el.attr("x", x);
-                    el.attr("y", y);
+                var cl = el.clone();
+                if(cl.attr("x") !== undefined){
+                    cl.attr("x", x);
+                    cl.attr("y", y);
                 }else{
-                    el.attr("cx", x);
-                    el.attr("cy", y);
+                    cl.attr("cx", x);
+                    cl.attr("cy", y);
                 }
+                el.after(cl);
+                el.remove();
             })
+            //small timeout to buffer next animation
+            await new Promise(r => setTimeout(r,500));
         }
 
         $(document).ready(function() {
@@ -216,11 +193,16 @@
                 addNode(9, 200, 200);
             });
 
-            $("#moveShapeButton").click(function(){
+            $("#moveShapeButton").click(async function(){
                 console.log("move clicked");
-                translateElements(".node_0", 100, 100);
+                await translateElements(".node_0", 100, 100);
+                
+                await translateElements(".node_0", 300, 300);
 
-                //translateElements(".node_0", 200, 200);
+                await translateElements(".node_0", 100, 300);
+
+                await translateElements(".node_0", 400, 100);
+                console.log("move all done");
             });
 
             $("#deleteShapeButton").click(function(){
