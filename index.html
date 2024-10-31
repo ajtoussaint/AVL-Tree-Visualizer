@@ -20,6 +20,34 @@
             height: 80vh;
             overflow: visible;
         }
+
+        /*@keyframes move{
+            0% {
+                x:0;
+                cx:0;
+            }
+            100% {
+                x:1000;
+                cx:1000;
+            }
+        }
+
+        @keyframes textMove{
+            0% {
+                transform: translateX(0)
+            }
+            100% {
+                transform: translateX(1000px);
+            }
+        }
+
+        #text_0{
+            animation: textMove 5s;
+        }
+
+        #circle_0{
+            animation: move 5s;
+        }*/
     </style>
 </head>
 
@@ -48,6 +76,18 @@
         <button id="randomButton">
             Random Tree
         </button>
+
+        <button id="addShapeButton">
+            Add
+        </button>
+
+        <button id="moveShapeButton">
+            move
+        </button>
+
+        <button id="deleteShapeButton">
+            delete
+        </button>
     </div>
     <div id="svgWrap">
         <svg id="mainSvg" width="600px" height="400px">
@@ -75,13 +115,55 @@
             document.getElementById('mainSvg').appendChild(el);
         }
 
-        const nodeRadius = 40;
+        const nodeRadius = 20;
         var root = null;
         const nodes = [];
+        var nodeIdCounter = 0
 
         function addNode(value, x, y){
-            addShape("circle", {cx:x, cy:y, r:nodeRadius, stroke:"black", "stroke-width":5, fill:"white", id:"myCircle"});
-            addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"24", "fill":"black"})
+            addShape("circle", {cx:x, cy:y, r:nodeRadius, stroke:"black", "stroke-width":3, fill:"white", id:"circle_"+nodeIdCounter, class:"node_" + nodeIdCounter});
+            
+            addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"20", "fill":"black", id:"text_" + nodeIdCounter, class:"node_" + nodeIdCounter});
+            nodeIdCounter += 1;
+        }
+
+        async function translateElements(identifier, x, y){
+            const duration = 500; //animation time in ms
+
+            els = $(identifier);
+
+            els.each((i, p) => {
+                el = $(p);
+                var old_x = el.attr("x") ?? el.attr("cx");
+                var old_y = el.attr("y") ?? el.attr("cy");
+
+                p.animate(
+                    [
+                        {transform: `translate(0,0)`},
+                        {transform: `translate(${x-old_x}px, ${y - old_y}px)`}
+                    ],
+                    {
+                        duration: duration,
+                        fill: 'forwards'
+                    }
+                )
+                    
+            });
+            console.log("waiting for animation...");
+            await new Promise(r => setTimeout(r,duration));
+
+            //after animation is complete update the actual values
+            console.log("updating position: " + x + "," + y);
+            els.each((i,p) => {
+                el = $(p);
+                if(el.attr("x") !== undefined){
+                    el.attr("x", x);
+                    el.attr("y", y);
+                }else{
+                    el.attr("cx", x);
+                    el.attr("cy", y);
+                }
+            })
         }
 
         $(document).ready(function() {
@@ -126,6 +208,37 @@
                 if(root != null)
                     root.display();
             });
+
+            $("#addShapeButton").click(function(){
+                console.log("Add shape clicked");
+                var w = $("#mainSvg").width();
+                var h = $("#mainSvg").height();
+                addNode(9, 200, 200);
+            });
+
+            $("#moveShapeButton").click(function(){
+                console.log("move clicked");
+                translateElements(".node_0", 100, 100);
+
+                //translateElements(".node_0", 200, 200);
+            });
+
+            $("#deleteShapeButton").click(function(){
+                console.log("delete shape clicked");
+                const node_parts = $(".node_0");
+                node_parts.each((i, p) => {
+                    p.animate(
+                        [
+                            {transform: 'translateY(0)'},
+                            {transform: 'translateY(100px)'}
+                        ],
+                        {
+                            duration: 500,
+                            fill: 'forwards'
+                        }
+                    )
+                })
+            })
         });
 
         class Node {
