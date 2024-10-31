@@ -107,7 +107,7 @@
                 var value = $("#delete").val();
                 value = parseInt(value, 10);
                 if(root != null){
-                    root.delete(value,[]);
+                    root.delete(value);
                 }
                 $("#delete").val('');
             });
@@ -117,7 +117,7 @@
             });
 
             $("#clearButton").click(function(){
-                alert("Clear clicked!");
+                root = null;
             });
 
             $("#randomButton").click(function(){
@@ -237,9 +237,89 @@
                         this.right.insert(n);
                     }
                 }
-                
             }
 
+            delete(v){
+                //go until you are the node to delete
+                if(this.value == v){
+                    console.log("Found node to delete: " + this.value);
+                    var validator;
+                    if (this.left){
+                        console.log("Searching left subtree for a repalcement");
+                        //if the toDelete node has a left child replace it with the largest node in the left subtree
+                        var largestLeft = this.left;
+                        while(largestLeft.right != null){
+                            largestLeft = largestLeft.right;
+                        }
+                        console.log("Found largest left node: " + largestLeft.value);
+                        //when the largest node is found, replace THAT node with ITS direct left child (may be null)
+                        if(largestLeft.value > largestLeft.parent.value)
+                            largestLeft.parent.right = largestLeft.left;
+                        else
+                            largestLeft.parent.left = largestLeft.left;
+
+                        if(largestLeft.left){
+                            largestLeft.left.parent = largestLeft.parent;
+                            validator = largestLeft.left;
+                        }else{
+                            validator = largestLeft.parent;
+                        }
+                        console.log("Replaced largest left node: ", largestLeft.parent);
+                        //then place the largst left node in this existing node's place
+                        largestLeft.parent = this.parent;
+                        largestLeft.left = this.left;
+                        largestLeft.right = this.right;
+                        if(this.parent && this.value > this.parent.value){
+                            //I am a right child
+                            this.parent.right = largestLeft;
+                        }else if(this.parent){
+                            //I am a left child
+                            this.parent.left = largestLeft;
+                        }else{
+                            root = largestLeft;
+                        }//otherwise root is deleted and no parent need be changed
+                        console.log("Moved the largest left node to its repalcement position: ", largestLeft, largestLeft.parent);
+                        //validate from the replacement node's parent (validator runs at end of next else statement)
+                    }else{
+                        console.log("Using right child as a replacement")
+                        //replace this node with its right child it with its right node (may be null)
+                        if(this.parent && this.value > this.parent.value){
+                            //I am a right child
+                            this.parent.right = this.right;
+                            if(this.right)
+                                this.right.parent = this.parent;
+                        }else if(this.parent){
+                            //I am a left child
+                            this.parent.left = this.right;
+                            if(this.right)
+                                this.right.parent = this.parent;
+                        }else{
+                            root = this.right;
+                        }
+                        //validate from this node up
+                        if(this.right)
+                            validator = this.right;
+                        else if(this.parent)
+                            validator = this.parent;
+                        else
+                            validator = null;
+                    }
+
+                    if(validator)
+                        validator.validateTree();
+                    
+                }else if(v < this.value && this.left != null){
+                    //look to the left
+                    this.left.delete(v);
+                }else if(v > this.value && this.right != null){
+                    //look to the right
+                    this.right.delete(v);
+                }else{
+                    console.log("No such node to delete: " + v);
+                }
+
+                
+            }
             
             display(){
                 var v1 = this.value;
