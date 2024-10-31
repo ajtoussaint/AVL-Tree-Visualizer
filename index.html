@@ -62,6 +62,9 @@
             delete
         </button>
     </div>
+    <div id="message">
+
+    </div>
     <div id="svgWrap">
         <svg id="mainSvg" width="600px" height="400px">
 
@@ -90,14 +93,14 @@
 
         const nodeRadius = 20;
         var root = null;
-        const nodes = [];
         var nodeIdCounter = 0
 
         function addNode(value, x, y){
-            addShape("circle", {cx:x, cy:y, r:nodeRadius, stroke:"black", "stroke-width":3, fill:"white", id:"circle_"+nodeIdCounter, class:"node_" + nodeIdCounter});
-            
-            addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"20", "fill":"black", id:"text_" + nodeIdCounter, class:"node_" + nodeIdCounter});
+            var nodeClass = "node_" + nodeIdCounter
+            addShape("circle", {cx:x, cy:y, r:nodeRadius, stroke:"black", "stroke-width":3, fill:"white", id:"circle_"+nodeIdCounter, class:nodeClass});
+            addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"20", "fill":"black", id:"text_" + nodeIdCounter, class:nodeClass});
             nodeIdCounter += 1;
+            return "." +nodeClass;
         }
 
         async function translateElements(identifier, x, y){
@@ -144,16 +147,22 @@
         }
 
         $(document).ready(function() {
-            $("#insertButton").click(function() {
-                var w = $("#mainSvg").width();
-                var h = $("#mainSvg").height();
-                //addNode(5, w/2, 0);
+            $("#insertButton").click(async function() {
+                const message = $("#message");
 
                 var value = $("#insert").val();
                 value = parseInt(value, 10);
-                const n = new Node(value, null);
+
+                //place a node with the value at the staging area
+                var nodeClass = addNode(value, 0, 100);
+                message.text("Adding node: " + value);
+                //pause for dramatic effect
+                await new Promise(r => setTimeout(r,500));
+                const n = new Node(value, null, nodeClass);
                 if(root == null){
-                    console.log("Adding new node at the root: " + n.value);
+                    message.text("Adding new node at the root: " + n.value);
+                    //move the node to the root location
+                    await translateElements(nodeClass, $('#mainSvg').width()/2 ,50);
                     root = n;
                     root.display();
                 }else{
@@ -208,27 +217,17 @@
             $("#deleteShapeButton").click(function(){
                 console.log("delete shape clicked");
                 const node_parts = $(".node_0");
-                node_parts.each((i, p) => {
-                    p.animate(
-                        [
-                            {transform: 'translateY(0)'},
-                            {transform: 'translateY(100px)'}
-                        ],
-                        {
-                            duration: 500,
-                            fill: 'forwards'
-                        }
-                    )
-                })
+                node_parts.remove();
             })
         });
 
         class Node {
-            constructor(value, parent){
+            constructor(value, parent, nodeClass){
                 this.value = value;
                 this.left = null;
                 this.right = null;
                 this.parent = parent;
+                this.class = nodeClass;
             }
 
             getValue(){
