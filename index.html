@@ -116,10 +116,11 @@
             var str = "line_"+lineIdCounter;
             addShape("line", {x1:x1, y1:y1, x2:x2, y2:y2, stroke:"black", "stroke-width":"3", id:str})
             lineIdCounter += 1;
-            return str
+            return "#" + str;
         }
 
         async function translateElements(identifier, x, y){
+            console.log("Translating Elements: " + identifier + ", " + x + ", " + y);
             const duration = 500; //animation time in ms
 
             els = $(identifier);
@@ -204,15 +205,17 @@
 
             $("#clearButton").click(function(){
                 root = null;
+                //remove all svg children
+                $('#mainSvg').empty();
             });
 
             $("#randomButton").click(function(){
-                
-                //temporary, displays all the nodes
+                //temporary, displays all the nodes in console
                 if(root != null)
                     root.display();
             });
 
+            //extra buttons for testing animations
             $("#addShapeButton").click(function(){
                 console.log("Add shape clicked");
                 var w = $("#mainSvg").width();
@@ -284,9 +287,26 @@
                 return parseFloat($("#text_" + this.id).attr('y'));
             }
 
+            leftChildX(){
+                if(!this.parent){
+                    return this.getX() / 2;
+                }else{
+                    return this.getX() - Math.abs(this.getX() - this.parent.getX())/2
+                }
+            }
+
+            rightChildX(){
+                if(!this.parent){
+                    return this.getX() * 1.5;
+                }else{
+                    return this.getX() + Math.abs(this.getX() - this.parent.getX())/2
+                }
+            }
+
             async validateTree(){
                 const message = $("#message");
                 message.text("Validating subtree at node " + this.value);
+                console.log("validating Tree at node: " + this.value);
                 //move the inspector to this element for validation
                 await translateElements('#inspector', this.getX(), this.getY());
 
@@ -300,16 +320,18 @@
                 if(Math.abs(l - r) > 1){
                     $("#inspector").attr("stroke", "red");
                     message.text("Subtree at node " + this.value + " is invalid!");
-
                     //fix the problem at this subtree
                     var k1 = this;
                     var k2, k3;
                     if(l - r > 0){
                         //left subtree is heavy
                         k2 = this.left;
+                        //set the left path color to red
+                        $(this.leftLineId).attr("stroke", "red");
                     }else{
                         //right subtree is heavy
                         k2 = this.right;
+                        $(this.rightLineId).attr("stroke", "red");
                     }
 
                     var l2 = -1;
@@ -322,9 +344,11 @@
                     if(l2 - r2 > 0){
                         //left sub subtree is heavy
                         k3 = k2.left;
+                        $(k2.leftLineId).attr("stroke", "red");
                     }else{
                         //right sub subtree is heavy
                         k3 = k2.right;
+                        $(k2.rightLineId).attr("stroke", "red");
                     }
 
                     console.log("Nodes: ", k1, k2, k3);
@@ -348,36 +372,35 @@
                     //check left side for insert location
                     message.text(n.value + '<=' + this.value);
                     //move inspector to where the left child would be
-                    await translateElements("#inspector", this.getX() / 2, 100 + this.getY());
+                    await translateElements("#inspector", this.leftChildX(), 100 + this.getY());
                     if(this.left == null){
                         message.text("Inserting node left of: " + this.value);
                         n.parent = this;
                         this.left = n;
                         //move the waiting node to the insertion location
-                        await translateElements(n.class, this.getX() / 2, 100 + this.getY());
+                        await translateElements(n.class, this.leftChildX(), 100 + this.getY());
                         //create a branch between the two
-                        createLine(this.getX() - nodeEdge, this.getY() + nodeEdge, this.getX()/2 + nodeEdge, 100 + this.getY() - nodeEdge);
+                        this.leftLineId = createLine(this.getX() - nodeEdge, this.getY() + nodeEdge, this.leftChildX() + nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
-                        this.validateTree();
+                        await this.validateTree();
                     }else{
                         this.left.insert(n);
                     }
                 }else{
                     //check right side for insert location
                     message.text(n.value + '>' + this.value);
-                    var rightX = this.getX() + ($("#mainSvg").width() - this.getX())/2;
-                    //move inspector to where the left child would be
-                    await translateElements("#inspector", rightX, 100 + this.getY());
+                    //move inspector to where the right child would be
+                    await translateElements("#inspector", this.rightChildX(), 100 + this.getY());
                     if(this.right == null){
                         message.text("Inserting node right of: " + this.value);
                         n.parent = this;
                         this.right = n;
                         //move the waiting node to the insertion location
-                        await translateElements(n.class, rightX, 100 + this.getY());
+                        await translateElements(n.class, this.rightChildX(), 100 + this.getY());
                         //create a branch between the two
-                        createLine(this.getX() + nodeEdge, this.getY() + nodeEdge, rightX - nodeEdge, 100 + this.getY() - nodeEdge);
+                        this.rightLineId = createLine(this.getX() + nodeEdge, this.getY() + nodeEdge, this.rightChildX() - nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
-                        this.validateTree();
+                        await this.validateTree();
                     }else{
                         this.right.insert(n);
                     }
@@ -482,10 +505,56 @@
                 if(this.right != null)
                     this.right.display();
             }
+
+            //given a new translation destination for this node move it there 
+            //along with all elements in the left subtree
+            async bringLeft(x, y){
+                console.log(this.value + " is bringing Left");
+                //move this element to its specified location
+                console.log("New location: " + x + "," + y);
+                //tell its left child to move to the location to the left of this new one
+                //brin gall the left childs children
+                
+                if(this.left){
+                    var left_x = x/2;
+                    var left_y = y + 100;
+                    this.left.bringChildren(left_x, left_y);
+                }
+                await translateElements(this.class, x, y)
+            }
+
+            async bringChildren(x, y){
+                console.log(this.value + " is bringing Children " + this.class);
+
+                var left_x = x/2;
+                var new_y = y + 100;
+                var right_x = x + ($("#mainSvg").width() - x)/2;
+                if(this.right){
+                    this.right.bringChildren(right_x, new_y);
+                }
+
+                if(this.left){
+                    this.left.bringChildren(left_x, new_y);
+                }
+
+                await translateElements(this.class, x, y);
+            }
+
+            async bringRight(x,y){
+                console.log(this.value + " is brining Right");
+
+                if(this.right){
+                    var right_x = x + ($("#mainSvg").width() - x)/2;
+                    var right_y = y + 100;
+                    this.right.bringChildren(right_x, right_y);
+                }
+
+                await translateElements(this.class, x, y)
+            }
         }
 
-        function fixViolation(k1, k2, k3){
-            console.log(k1, k2, k3);
+        async function fixViolation(k1, k2, k3){
+            const message = $("#message");
             //find the relationship between k1 and k2
             var firstIsRight = (k1.right === k2);
             var secondIsRight = (k2.right === k3);
@@ -571,6 +640,38 @@
             }else{
                 //Left left rotation
                 console.log("LL rotation");
+
+                //remove lines connected to k1s parent
+                if(k1.parent){
+                    if(k1.value > k1.parent.value){
+                        $(k1.parent.rightLineId).remove();
+                    }else{
+                        $(k1.parent.leftLineId).remove();
+                    }
+                }
+
+                //remove k1s left child line
+                $(k1.leftLineId).remove()
+
+                //move many things
+                    //move k1 to the spot for its right child
+                    var k1x = k1.getX();
+                    var k1y = k1.getY();
+                    var rightX = k1x + ($("#mainSvg").width() - k1x)/2;
+                    await k1.bringRight(rightX, 100 + k1y);
+                    //translateElements(k1.class, rightX, 100 + k1y)
+                        //move k1s entire right subtree with it
+                    console.log("moved k1 (5) and its subtree");
+                    //move k2 to k1's spot
+                    //translateElements(k2.class, k1x, k1y);
+                        //move k2's entire left subtree with it
+                        await k2.bringLeft(k1x, k1y);
+                        console.log("moved k2, and its subtree");
+                    //move k2's right child to be k1's left child
+                    if(k2.right)
+                        await k2.right.bringChildren(rightX / 2,200 + k1y)
+                        //move k2's right child's subtree with it
+                    console.log("if k2 had a right subtree it would be moved to be the left child of k1")
 
                 temp = k2.right;
                 k2.right = k1;
