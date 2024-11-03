@@ -145,7 +145,6 @@
             await new Promise(r => setTimeout(r,duration));
 
             //after animation is complete clone the elements in the new location and delete the old ones
-            console.log("updating position of " + identifier + ": " + x + "," + y);
             els.each((i,p) => {
                 el = $(p);
                 var cl = el.clone();
@@ -160,7 +159,9 @@
                 el.remove();
             })
             //small timeout to buffer next animation
+            console.log(identifier + " translation complete");
             await new Promise(r => setTimeout(r,500));
+            console.log(identifier + " buffer complete");
         }
 
         $(document).ready(function() {
@@ -351,8 +352,8 @@
                         $(k2.rightLineId).attr("stroke", "red");
                     }
 
-                    console.log("Nodes: ", k1, k2, k3);
-                    fixViolation(k1, k2, k3);
+                    console.log("Validate Tree has chosen these nodes to fix a violation: ", k1, k2, k3);
+                    await fixViolation(k1, k2, k3);
                     
                 }
                 //have the parent continue validating
@@ -514,42 +515,51 @@
                 console.log("New location: " + x + "," + y);
                 //tell its left child to move to the location to the left of this new one
                 //brin gall the left childs children
-                
+                await translateElements(this.class, x, y)
+
                 if(this.left){
                     var left_x = x/2;
                     var left_y = y + 100;
+                    console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + left_y + ")");
                     this.left.bringChildren(left_x, left_y);
                 }
-                await translateElements(this.class, x, y)
+                
             }
 
             async bringChildren(x, y){
-                console.log(this.value + " is bringing Children " + this.class);
+                console.log(this.value + " is bringing Children ");
+
+                await translateElements(this.class, x, y);
 
                 var left_x = x/2;
                 var new_y = y + 100;
                 var right_x = x + ($("#mainSvg").width() - x)/2;
                 if(this.right){
+                    console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
                     this.right.bringChildren(right_x, new_y);
                 }
 
                 if(this.left){
+                    console.log(this.value + " Tells its left child, " + this.right.value + " to go to (" + left_x + ", " + new_y + ")");
                     this.left.bringChildren(left_x, new_y);
                 }
 
-                await translateElements(this.class, x, y);
+                
             }
 
             async bringRight(x,y){
-                console.log(this.value + " is brining Right");
+                console.log(this.value + " is bringing Right");
+
+                await translateElements(this.class, x, y)
 
                 if(this.right){
                     var right_x = x + ($("#mainSvg").width() - x)/2;
                     var right_y = y + 100;
+                    console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
                     this.right.bringChildren(right_x, right_y);
                 }
 
-                await translateElements(this.class, x, y)
+                
             }
         }
 
@@ -653,26 +663,24 @@
                 //remove k1s left child line
                 $(k1.leftLineId).remove()
 
-                //move many things
-                    //move k1 to the spot for its right child
-                    var k1x = k1.getX();
-                    var k1y = k1.getY();
-                    var rightX = k1x + ($("#mainSvg").width() - k1x)/2;
-                    await k1.bringRight(rightX, 100 + k1y);
-                    //translateElements(k1.class, rightX, 100 + k1y)
-                        //move k1s entire right subtree with it
-                    console.log("moved k1 (5) and its subtree");
-                    //move k2 to k1's spot
-                    //translateElements(k2.class, k1x, k1y);
-                        //move k2's entire left subtree with it
-                        await k2.bringLeft(k1x, k1y);
-                        console.log("moved k2, and its subtree");
-                    //move k2's right child to be k1's left child
-                    if(k2.right)
-                        await k2.right.bringChildren(rightX / 2,200 + k1y)
-                        //move k2's right child's subtree with it
-                    console.log("if k2 had a right subtree it would be moved to be the left child of k1")
 
+                //move k1 to the spot for its right child along with its right subtree
+                var k1x = k1.rightChildX();
+                var k1y = k1.getY() + 100;
+                //before moving save its old position to be used by k2
+                var k2x = k1.getX();
+                var k2y = k1.getY();
+                await k1.bringRight(k1x, k1y);
+                console.log("moved k1 (5) and its subtree");
+                //move k2 to k1's old spot with its left subtree
+                await k2.bringLeft(k2x, k2y);
+                console.log("moved k2, and its subtree");
+                //move k2's right child to be k1's left child
+                if(k2.right)
+                    await k2.right.bringChildren(k1.leftChildX(),k1.getY() + 100)
+                    //move k2's right child's subtree with it
+                
+                //apply the background logic
                 temp = k2.right;
                 k2.right = k1;
                 k1.left = temp;

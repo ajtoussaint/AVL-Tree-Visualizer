@@ -1,0 +1,10 @@
+1. Create a method for translating lines, demo with the add button and move button
+2. fix the "bring" methods so that they know the appropriate postition of a child
+3. update the message during the bring methods
+4. variable animation speed for bring methods
+5. Add line translations to rotations and bring methods
+6 Change inspector back to blue after fixing
+7. hide the inputs while animations play
+8. Delete animations
+9. Delete takes vertex as an input?
+10. Create random tree
