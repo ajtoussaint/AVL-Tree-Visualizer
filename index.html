@@ -657,7 +657,32 @@
             if(firstIsRight && secondIsRight){
                 //Right right rotation
                 console.log("RR rotation");
+                message.text("Performing a Right-Right rotation to fix the violaiton");
+
+                //remove lines connected to k1s parent
+                if(k1.parent){
+                    if(k1.value > k1.parent.value){
+                        $(k1.parent.rightLineId).remove();
+                    }else{
+                        $(k1.parent.leftLineId).remove();
+                    }
+                }
+
+                //remove k1s right child line
+                $(k1.rightLineId).remove();
+
+                //calculate new positions
+
+                //k1 moves to the spot for its left child
+                var k1x = k1.leftChildX();
+                var k1y = k1.getY() + 100;
+                //k2 moves to k1s current position
+                var k2x = k1.getX();
+                var k2y = k1.getY();
+                //if k2 has left child it will need to move later
+                var k2l  = k2.left;
                 
+                //apply background logic
                 temp = k2.left;
                 k2.left = k1;
                 k1.right = temp;
@@ -675,7 +700,38 @@
                 }else{
                     k2.parent.left = k2;
                 }
-                console.log(k1, k2);
+                //calculate cspace for k1 to move its children appropriately
+                var cspace = Math.abs(k1.getX() - k1x)/2;
+                await k1.bringLeft(k1x, k1y, cspace);
+                console.log("moved k1 and its subtree");
+
+                //move k2 to k1s old spot along with its right subtree
+                if(k2.leftLineId){
+                    $(k2.leftLineId).remove();
+                }
+                await k2.bringRight(k2x, k2y);
+                console.log("moved k2 and its subtree");
+
+                //create new leftchild line for k2
+                k2.leftLineId = createLine(k2.getX() - nodeEdge, k2.getY() + nodeEdge, k2.leftChildX() + nodeEdge, k2.getY() + 100 - nodeEdge)
+
+                //restor k2s new parent line if necessary
+                if(k2.parent){
+                    if(k2.value > k2.parent.value){
+                        //k2 is right child
+                        k2.parent.rightLineId = createLine(k2.parent.getX() + nodeEdge, k2.parent.getY() + nodeEdge, k2.getX() - nodeEdge, k2.getY() - nodeEdge);
+                    }else{  
+                        //k2 is left child
+                        k2.parent.leftLineId = createLine(k2.parent.getX() - nodeEdge, k2.parent.getY() + nodeEdge, k2.getX() + nodeEdge, k2.getY() - nodeEdge);
+                    }
+                }
+
+                //k2s left child moves to be k1s right child in k1s new position
+                if(k2l){
+                    await k2l.bringChildren(k1.rightChildX(), k1.getY() + 100)
+                    k1.rightLineId = createLine(k1.getX() + nodeEdge, k1.getY() + nodeEdge, k2l.getX() - nodeEdge, k2l.getY() - nodeEdge);
+                }
+                
             }else if(firstIsRight && !secondIsRight){
                 //Right left rotation
                 console.log("RL rotation");
@@ -780,7 +836,7 @@
 
                 //calculate space between k1 and its right child and use cspace argument <- parent out of poisiont
                 var cspace = Math.abs(k1.getX() - k1x)/2;
-                console.log("Calcualted cspace to be " + cspace + " based on " + k1.getX() + " and " + k1x);
+                
                 await k1.bringRight(k1x, k1y, cspace);
                 console.log("moved k1 and its subtree");
                 //move k2 to k1's old spot with its left subtree

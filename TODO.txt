@@ -1,5 +1,4 @@
-4. variable animation speed for bring methods
-7. hide the inputs while animations play
 8. Animations for deleting a node
 9. Delete takes vertex as an input?
 10. Create random tree
+11. Animations for find
