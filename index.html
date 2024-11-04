@@ -164,6 +164,48 @@
             console.log(identifier + " buffer complete");
         }
 
+        async function moveLine(identifier, x1, y1, x2, y2, duration=500){
+            console.log("Moving Line " + identifier + " to location [(" + x1 +", " + y1 + ")(" + x2 + ", " + y2 + ")]");
+            el = $(identifier);
+            const old_x1 = parseFloat(el.attr("x1"));
+            const old_y1 = parseFloat(el.attr("y1"));
+            const old_x2 = parseFloat(el.attr("x2"));
+            const old_y2 = parseFloat(el.attr("y2"));
+
+            const dx1 = x1 - old_x1;
+            const dy1 = y1 - old_y1;
+            const dx2 = x2 - old_x2;
+            const dy2 = y2 - old_y2;
+
+            const startTime = performance.now();
+
+            function animateLine(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                el.attr("x1", old_x1 + dx1 * progress);
+                el.attr("y1", old_y1 + dy1 * progress);
+                el.attr("x2", old_x2 + dx2 * progress);
+                el.attr("y2", old_y2 + dy2 * progress);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateLine);
+                }
+            }
+
+            requestAnimationFrame(animateLine);
+
+            await new Promise(r => setTimeout(r,duration));//wait for animation to finish
+
+            var cl = el.clone()
+            cl.attr({x1:x1, y1:y1, x2:x2, y2:y2});
+            el.after(cl);
+            el.remove();
+            console.log(identifier + " line move complete");
+            await new Promise(r => setTimeout(r,duration));
+            console.log(identifier + " buffer complete");
+        }
+
         $(document).ready(function() {
             const message = $("#message");
 
@@ -222,17 +264,22 @@
                 var w = $("#mainSvg").width();
                 var h = $("#mainSvg").height();
                 addNode(9, 200, 200);
+                createLine(300, 100, 100, 300);
             });
 
             $("#moveShapeButton").click(async function(){
                 console.log("move clicked");
-                await translateElements(".node_0", 100, 100);
+                //await translateElements(".node_0", 100, 100);
                 
-                await translateElements(".node_0", 300, 300);
+                //await translateElements(".node_0", 300, 300);
 
-                await translateElements(".node_0", 100, 300);
+                //await translateElements(".node_0", 100, 300);
 
-                await translateElements(".node_0", 400, 100);
+                //await translateElements(".node_0", 400, 100);
+
+                await moveLine("#line_0", 100, 300, 300, 100)
+
+                await moveLine("#line_0", 100, 100, 200, 200);
                 console.log("move all done");
             });
 
