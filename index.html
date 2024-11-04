@@ -603,27 +603,37 @@
                 var left_x = this.leftChildX();
                 var new_y = y + 100;
                 var right_x = this.rightChildX();
+
                 if(this.right){
+                    $(this.rightLineId).attr("stroke", "black");
+                    await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , new_y - nodeEdge);
                     console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
                     await this.right.bringChildren(right_x, new_y);
                 }
 
                 if(this.left){
-                    console.log(this.value + " Tells its left child, " + this.right.value + " to go to (" + left_x + ", " + new_y + ")");
+                    $(this.leftLineId).attr("stroke", "black");
+                    await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , new_y - nodeEdge);
+                    console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + new_y + ")");
                     await this.left.bringChildren(left_x, new_y);
-                }
-
-                
+                }          
             }
 
-            async bringRight(x,y){
+            async bringRight(x,y, cspace){
                 console.log(this.value + " is bringing Right");
 
                 await translateElements(this.class, x, y)
 
                 if(this.right){
-                    var right_x = this.rightChildX();
+                    $(this.rightLineId).attr("stroke", "black");
+
+                    //use predefined cspace in case parent is out of position to calculate rightChildX
+                    console.log("Cspace is: " + cspace);
+                    var right_x = cspace ? x + cspace : this.rightChildX();                    
                     var right_y = y + 100;
+
+                    await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , right_y - nodeEdge);
+
                     console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
                     await this.right.bringChildren(right_x, right_y);
                 }
@@ -762,7 +772,10 @@
                     k2.parent.left = k2;
                 }
 
-                await k1.bringRight(k1x, k1y);
+                //calculate space between k1 and its right child and use cspace argument <- parent out of poisiont
+                var cspace = Math.abs(k1.getX() - k1x)/2;
+                console.log("Calcualted cspace to be " + cspace + " based on " + k1.getX() + " and " + k1x);
+                await k1.bringRight(k1x, k1y, cspace);
                 console.log("moved k1 and its subtree");
                 //move k2 to k1's old spot with its left subtree
                 if(k2.rightLineId){
