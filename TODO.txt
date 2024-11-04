@@ -1,7 +1,4 @@
-3. update the message during the bring methods
 4. variable animation speed for bring methods
-5. Add line translations to rotations and bring methods
-6 Change inspector back to blue after fixing
 7. hide the inputs while animations play
 8. Animations for deleting a node
 9. Delete takes vertex as an input?

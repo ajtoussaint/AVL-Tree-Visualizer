@@ -97,6 +97,7 @@
         var root = null;
         var nodeIdCounter = 0;
         var lineIdCounter = 0;
+        var canInsert = true;
 
         function addNode(value, x, y){
             var nodeClass = "node_" + nodeIdCounter
@@ -215,27 +216,29 @@
             const message = $("#message");
 
             $("#insertButton").click(async function() {
-                var value = $("#insert").val();
-                value = parseInt(value, 10);
-                $("#insert").val('');
+                if(canInsert){
+                    canInsert = false;
+                    var value = $("#insert").val();
+                    value = parseInt(value, 10);
+                    $("#insert").val('');
 
-                //place a node with the value at the staging area
-                var nodeClass = addNode(value, 0, 100);
-                message.text("Adding node: " + value);
-                //pause for dramatic effect
-                await new Promise(r => setTimeout(r,500));
-                const n = new Node(value, null, nodeClass);
-                if(root == null){
-                    message.text("Adding new node at the root: " + n.value);
-                    //move the node to the root location
-                    await translateElements(nodeClass, $('#mainSvg').width()/2 ,50);
-                    root = n;
-                    root.display();
-                }else{
-                    createInspector();
-                    root.insert(n);
+                    //place a node with the value at the staging area
+                    var nodeClass = addNode(value, 0, 100);
+                    message.text("Adding node: " + value);
+                    //pause for dramatic effect
+                    await new Promise(r => setTimeout(r,500));
+                    const n = new Node(value, null, nodeClass);
+                    if(root == null){
+                        message.text("Adding new node at the root: " + n.value);
+                        //move the node to the root location
+                        await translateElements(nodeClass, $('#mainSvg').width()/2 ,50);
+                        root = n;
+                        canInsert = true;
+                    }else{
+                        createInspector();
+                        root.insert(n);
+                    }
                 }
-                
             });
 
             $("#deleteButton").click(function(){
@@ -422,6 +425,7 @@
                 if(this.parent){
                     this.parent.validateTree();
                 }else{
+                    message.text("Done")
                     $("#inspector").remove()
                 }
                     
@@ -446,6 +450,7 @@
                         this.leftLineId = createLine(this.getX() - nodeEdge, this.getY() + nodeEdge, this.leftChildX() + nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         await this.validateTree();
+                        canInsert = true;
                     }else{
                         this.left.insert(n);
                     }
@@ -464,6 +469,7 @@
                         this.rightLineId = createLine(this.getX() + nodeEdge, this.getY() + nodeEdge, this.rightChildX() - nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         await this.validateTree();
+                        canInsert = true;
                     }else{
                         this.right.insert(n);
                     }
@@ -571,7 +577,7 @@
 
             //given a new translation destination for this node move it there 
             //along with all elements in the left subtree
-            async bringLeft(x, y){
+            async bringLeft(x, y, cspace){
                 console.log(this.value + " is bringing Left");
                 //move this element to its specified location
                 console.log("New location: " + x + "," + y);
@@ -584,7 +590,7 @@
                     $(this.leftLineId).attr("stroke", "black");
                     
                     //move the child to its position
-                    var left_x = this.leftChildX();
+                    var left_x = cspace ? x - cspace : this.leftChildX();
                     var left_y = y + 100;
 
                     await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , left_y - nodeEdge);
@@ -595,14 +601,14 @@
                 
             }
 
-            async bringChildren(x, y){
+            async bringChildren(x, y, cspace){
                 console.log(this.value + " is bringing Children ");
 
                 await translateElements(this.class, x, y);
 
-                var left_x = this.leftChildX();
+                var left_x = cspace ? x - cspace : this.leftChildX();
                 var new_y = y + 100;
-                var right_x = this.rightChildX();
+                var right_x = cspace ? x + cspace : this.rightChildX();
 
                 if(this.right){
                     $(this.rightLineId).attr("stroke", "black");
@@ -628,7 +634,6 @@
                     $(this.rightLineId).attr("stroke", "black");
 
                     //use predefined cspace in case parent is out of position to calculate rightChildX
-                    console.log("Cspace is: " + cspace);
                     var right_x = cspace ? x + cspace : this.rightChildX();                    
                     var right_y = y + 100;
 
@@ -729,6 +734,7 @@
             }else{
                 //Left left rotation
                 console.log("LL rotation");
+                message.text("Performing a Left-Left rotation to fix the violation")
 
                 //remove lines connected to k1s parent
                 if(k1.parent){
@@ -806,6 +812,7 @@
             }
             console.log("Rotation Complete");
             root.display();
+            message.text("Violation Resolved");
         }
 
     </script>
