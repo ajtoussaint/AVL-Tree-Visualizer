@@ -3,6 +3,6 @@
 5. Add line translations to rotations and bring methods
 6 Change inspector back to blue after fixing
 7. hide the inputs while animations play
-8. Delete animations
+8. Animations for deleting a node
 9. Delete takes vertex as an input?
 10. Create random tree
