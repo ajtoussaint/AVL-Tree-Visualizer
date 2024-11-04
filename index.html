@@ -97,7 +97,7 @@
         var root = null;
         var nodeIdCounter = 0;
         var lineIdCounter = 0;
-        var canInsert = true;
+        var canSubmit = true;
 
         function addNode(value, x, y){
             var nodeClass = "node_" + nodeIdCounter
@@ -216,8 +216,8 @@
             const message = $("#message");
 
             $("#insertButton").click(async function() {
-                if(canInsert){
-                    canInsert = false;
+                if(canSubmit){
+                    canSubmit = false;
                     var value = $("#insert").val();
                     value = parseInt(value, 10);
                     $("#insert").val('');
@@ -233,7 +233,7 @@
                         //move the node to the root location
                         await translateElements(nodeClass, $('#mainSvg').width()/2 ,50);
                         root = n;
-                        canInsert = true;
+                        canSubmit = true;
                     }else{
                         createInspector();
                         root.insert(n);
@@ -241,25 +241,40 @@
                 }
             });
 
-            $("#deleteButton").click(function(){
-                var value = $("#delete").val();
-                value = parseInt(value, 10);
-                if(root != null){
-                    root.delete(value);
+            $("#deleteButton").click(async function(){
+                if(canSubmit){
+                    canSubmit = false;
+
+                    var value = $("#delete").val();
+                    value = parseInt(value, 10);
+                    $("#delete").val('');
+                    $("#message").text("Deleting " + value);
+
+                    if(root != null){
+                        createInspector();
+                        root.delete(value);
+                    }else{
+                        $("#message").text("No nodes in tree!");
+                        canSubmit = true;
+                    }
                 }
-                $("#delete").val('');
             });
 
-            $("#findButton").click(function(){
-                var value = $('#find').val();
-                value = parseInt(value, 10);
-                if(root){
-                    createInspector();
-                    root.find(value);
-                }else{
-                    $("#message").text("No nodes in tree!");
+            $("#findButton").click(async function(){
+                if(canSubmit){
+                    canSubmit = false;
+                    var value = $('#find').val();
+                    value = parseInt(value, 10);
+                    if(root){
+                        createInspector();
+                        root.find(value);
+                    }else{
+                        $("#message").text("No nodes in tree!");
+                        canSubmit = true;
+                    }
+                    $("#find").val('');
                 }
-                $("#find").val('');
+                
             });
 
             $("#clearButton").click(function(){
@@ -452,6 +467,7 @@
                         await new Promise(r => setTimeout(r,500));
                         //remove inspector
                         $("#inspector").remove();
+                        canSubmit = true;
                     }else{
                         this.left.find(v);
                     }
@@ -466,6 +482,7 @@
                         await new Promise(r => setTimeout(r,500));
                         //remove inspector
                         $("#inspector").remove();
+                        canSubmit = true;
                     }else{
                         this.right.find(v);
                     }
@@ -499,7 +516,7 @@
                         this.leftLineId = createLine(this.getX() - nodeEdge, this.getY() + nodeEdge, this.leftChildX() + nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         await this.validateTree();
-                        canInsert = true;
+                        canSubmit = true;
                     }else{
                         this.left.insert(n);
                     }
@@ -518,48 +535,93 @@
                         this.rightLineId = createLine(this.getX() + nodeEdge, this.getY() + nodeEdge, this.rightChildX() - nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         await this.validateTree();
-                        canInsert = true;
+                        canSubmit = true;
                     }else{
                         this.right.insert(n);
                     }
                 }
             }
 
-            delete(v){
+            async delete(v){
+                const message = $("#message");
+
                 //go until you are the node to delete
                 if(this.value == v){
+                    //delete this node
                     console.log("Found node to delete: " + this.value);
+                    //remove this nodes visual
+                    var old_x = this.getX();
+                    var old_y = this.getY();
+                    $(this.class).remove();
+                    if(this.parent){
+                        if(this.parent.value < this.value){
+                            $(this.parent.rightLineId).remove()
+                        }else{
+                            $(this.parent.leftLineId).remove()
+                        }
+                    }
+                    await new Promise(r => setTimeout(r,500));
                     var validator;
                     if (this.left){
-                        console.log("Searching left subtree for a repalcement");
+                        message.text("Finding largest node in left subtree as replacement");
                         //if the toDelete node has a left child replace it with the largest node in the left subtree
                         var largestLeft = this.left;
+                        await translateElements("#inspector", this.left.getX(), this.left.getY());
                         while(largestLeft.right != null){
                             largestLeft = largestLeft.right;
+                            await translateElements("#inspector", largestLeft.getX(), largestLeft.getY());
                         }
                         console.log("Found largest left node: " + largestLeft.value);
+                        message.text("Largest left node is " + largestLeft.value);
                         //when the largest node is found, replace THAT node with ITS direct left child (may be null)
-                        if(largestLeft.value > largestLeft.parent.value)
+                        if(largestLeft.value > largestLeft.parent.value){
+                            $(largestLeft.parent.rightLineId).remove();
                             largestLeft.parent.right = largestLeft.left;
-                        else
+                        }else{
+                            $(largestLeft.parent.leftLineId).remove();
                             largestLeft.parent.left = largestLeft.left;
+                        }
+
+                        //delete LLs connection to child
+                        if(largestLeft.left)
+                            $(largestLeft.leftLineId).remove();
+                        //save ll's current location to move its child
+                        var llx = largestLeft.getX();
+                        var lly = largestLeft.getY();
+
+                        //move the largest left node to this nodes previous locaiton
+                        await translateElements(largestLeft.class, old_x, old_y);
 
                         if(largestLeft.left){
                             largestLeft.left.parent = largestLeft.parent;
+                            await translateElements(largestLeft.left.class, llx, lly);
+                            largestLeft.parent.rightLineId = createLine(largestLeft.parent.getX() + nodeEdge, largestLeft.parent.getY() + nodeEdge, llx - nodeEdge, lly - nodeEdge);
+                            console.log("Seeting valiator to the left child of LL");
                             validator = largestLeft.left;
-                        }else{
+                        }else if(largestLeft.parent !== this){
+                            console.log("Setting validator to the parent of LL");
                             validator = largestLeft.parent;
+                        }else{
+                            console.log("Setting validator to LL")
+                            validator = largestLeft;
                         }
                         console.log("Replaced largest left node: ", largestLeft.parent);
                         //then place the largst left node in this existing node's place
                         largestLeft.parent = this.parent;
                         largestLeft.left = this.left;
                         largestLeft.right = this.right;
+                        if(this.left)
+                            this.left.parent = largestLeft;
+                        if(this.right)
+                            this.right.parent = largestLeft;
+
                         if(this.parent && this.value > this.parent.value){
                             //I am a right child
+                            this.parent.rightLineId = createLine(this.parent.getX() + nodeEdge, this.parent.getY() + nodeEdge, this.parent.rightChildX() - nodeEdge, this.parent.getY() +100 - nodeEdge);
                             this.parent.right = largestLeft;
                         }else if(this.parent){
                             //I am a left child
+                            this.parent.leftLineId = createLine(this.parent.getX() - nodeEdge, this.parent.getY() + nodeEdge, this.parent.leftChildX() + nodeEdge, this.parent.getY() + 100 - nodeEdge);
                             this.parent.left = largestLeft;
                         }else{
                             root = largestLeft;
@@ -568,40 +630,65 @@
                         //validate from the replacement node's parent (validator runs at end of next else statement)
                     }else{
                         console.log("Using right child as a replacement")
-                        //replace this node with its right child it with its right node (may be null)
+                        $(this.rightLineId).remove();
+                        await this.right.bringChildren(old_x, old_y);
+                        //replace this node with its right child node (may be null)
                         if(this.parent && this.value > this.parent.value){
                             //I am a right child
                             this.parent.right = this.right;
                             if(this.right)
                                 this.right.parent = this.parent;
+                            else
+                                $(this.parent.rightLineId).remove();
                         }else if(this.parent){
                             //I am a left child
                             this.parent.left = this.right;
                             if(this.right)
                                 this.right.parent = this.parent;
+                            else
+                                $(this.parent.leftLineId).remove();
                         }else{
+                            this.right.parent = this.parent;
                             root = this.right;
                         }
                         //validate from this node up
-                        if(this.right)
+                        if(this.right){
+                            conosle.log("setting validator to this.right");
                             validator = this.right;
-                        else if(this.parent)
+                        }
+                        else if(this.parent){
+                            conosle.log("setting validator to this.parent");
                             validator = this.parent;
-                        else
+                        }
+                        else{
+                            conosle.log("setting validator to null");
                             validator = null;
+                        }
                     }
 
+                    console.log("Validator is ",  validator);
+
                     if(validator)
-                        validator.validateTree();
-                    
+                        await validator.validateTree();
+                    else
+                        $("#inspector").remove();
+
+                    canSubmit = true;
                 }else if(v < this.value && this.left != null){
                     //look to the left
+                    message.text(v + "<" + this.value);
+                    await translateElements("#inspector", this.leftChildX(), 100 + this.getY());
                     this.left.delete(v);
                 }else if(v > this.value && this.right != null){
                     //look to the right
+                    message.text(v + ">" + this.value);
+                    await translateElements("#inspector", this.rightChildX(), 100 + this.getY());
                     this.right.delete(v);
                 }else{
+                    message.text("Value does not exist in tree");
                     console.log("No such node to delete: " + v);
+                    canSubmit = true;
+                    $("#inspector").remove();
                 }
 
                 

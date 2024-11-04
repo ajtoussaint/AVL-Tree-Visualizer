@@ -1,5 +1,4 @@
-8. Animations for deleting a node
+8. Animations for when delete causes a rotation
 9. Delete takes vertex as an input?
 10. Create random tree
-11. Animations for find
 12. Ascending vs descending bring animations to prevent covering up nodes with other nodes
