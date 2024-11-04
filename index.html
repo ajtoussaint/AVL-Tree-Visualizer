@@ -251,7 +251,15 @@
             });
 
             $("#findButton").click(function(){
-                alert("Find clicked!");
+                var value = $('#find').val();
+                value = parseInt(value, 10);
+                if(root){
+                    createInspector();
+                    root.find(value);
+                }else{
+                    $("#message").text("No nodes in tree!");
+                }
+                $("#find").val('');
             });
 
             $("#clearButton").click(function(){
@@ -429,6 +437,47 @@
                     $("#inspector").remove()
                 }
                     
+            }
+
+            async find(v){
+                const message = $("#message");
+                if(v < this.value){
+                    message.text(v + '<=' + this.value);
+                    await translateElements("#inspector", this.leftChildX(), 100 + this.getY());
+                    if(this.left == null){
+                        //node does not exist
+                        $("#inspector").attr('stroke', 'red');    
+                        message.text(v + " could not be found");
+                        //pause for effect
+                        await new Promise(r => setTimeout(r,500));
+                        //remove inspector
+                        $("#inspector").remove();
+                    }else{
+                        this.left.find(v);
+                    }
+                }else if(v > this.value){
+                    message.text(v + ">" + this.value);
+                    await translateElements("#inspector", this.rightChildX(), 100 + this.getY());
+                    if(this.right == null){
+                        //node does not exist
+                        $("#inspector").attr('stroke', 'red');    
+                        message.text(v + " could not be found");
+                        //pause for effect
+                        await new Promise(r => setTimeout(r,500));
+                        //remove inspector
+                        $("#inspector").remove();
+                    }else{
+                        this.right.find(v);
+                    }
+                }else{
+                    //this is the node were looking for
+                    message.text("Found " + v);
+                    $("#inspector").attr('stroke', 'green');
+                    //pause for effect
+                    await new Promise(r => setTimeout(r,500));
+                    //delete inspector
+                    $("#inspector").remove();
+                }
             }
 
 
