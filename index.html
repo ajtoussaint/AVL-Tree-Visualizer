@@ -735,6 +735,32 @@
             }else if(firstIsRight && !secondIsRight){
                 //Right left rotation
                 console.log("RL rotation");
+                message.text("Performing a Right-Left rotation to fix the violation");
+
+                //remove the right line and parent line connected to k1:
+                if(k1.parent){
+                    if(k1.value > k1.parent.value){
+                        $(k1.parent.rightLineId).remove();
+                    }else{
+                        $(k1.parent.leftLineId).remove();
+                    }
+                }
+                $(k1.rightLineId).remove();
+
+                //move k1 to the location of its left child
+                var k1x = k1.leftChildX();
+                var k1y = k1.getY() + 100;
+
+                //move k3 to k1s old spot
+                var k3x = k1.getX();
+                var k3y = k1.getY();
+
+                //if k3 has a right child it will become k2s left child
+                var k3r = k3.right;
+                //if k3 has a left child it will become k1s right child
+                var k3l = k3.left;
+
+                //apply backend logic
                 temp1 = k3.left;
                 temp2 = k3.right;
                 k3.left = k1;
@@ -759,7 +785,48 @@
                 }else{
                     k3.parent.left = k3;
                 }
-                    
+
+                //apply animations
+                //calculate space between k1 and  child
+                var cspace = Math.abs(k1.getX() - k1x)/2;
+                //move k1 to its locaiton along with its left child
+                await k1.bringLeft(k1x, k1y, cspace);
+                console.log("moved k1 and its subtree");
+                //move k3 to k1s old spot
+                if(k3.rightLineId){
+                    $(k3.rightLineId).remove();
+                }
+                if(k3.leftLineId){
+                    $(k3.leftLineId).remove();
+                }
+                $(k2.leftLineId).remove();
+                await translateElements(k3.class, k3x, k3y);
+                console.log("moved k3 to its correct location");
+                //create child lines for k3
+                k3.rightLineId = createLine(k3.getX() + nodeEdge, k3.getY() + nodeEdge, k3.rightChildX() - nodeEdge, 100 + k3.getY() - nodeEdge);
+                k3.leftLineId = createLine(k3.getX() - nodeEdge, k3.getY() + nodeEdge, k3.leftChildX() + nodeEdge, 100 + k3.getY() - nodeEdge);
+                //if k1 had a parent restore that line
+                if(k3.parent){
+                    if(k3.value > k3.parent.value){
+                        //k3 is right child
+                        k3.parent.rightLineId = createLine(k3.parent.getX() + nodeEdge, k3.parent.getY() + nodeEdge, k3.getX() - nodeEdge, k3.getY() - nodeEdge);
+                    }else{  
+                        //k3 is left child
+                        k3.parent.leftLineId = createLine(k3.parent.getX() - nodeEdge, k3.parent.getY() + nodeEdge, k3.getX() + nodeEdge, k3.getY() - nodeEdge);
+                    }
+                }
+
+                //move k3s left child to be k1's right child
+                if(k3l){
+                    await k3l.bringChildren(k1.rightChildX(), k1.getY() + 100);
+                    k1.rightLineId = createLine(k1.getX() + nodeEdge, k1.getY() + nodeEdge, k1.rightChildX() - nodeEdge, k1.getY() + 100 - nodeEdge);
+                }
+                if(k3r){
+                    await k3r.bringChildren(k2.leftChildX(), k2.getY() + 100);
+                    k2.leftLineId = createLine(k2.getX() - nodeEdge, k2.getY() + nodeEdge, k2.leftChildX() + nodeEdge, k2.getY() + 100 - nodeEdge)
+                }
+
+
             }else if(!firstIsRight && secondIsRight){
                 //Left Right rotation
                 console.log("LR rotation");
