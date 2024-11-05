@@ -650,11 +650,15 @@
                         largestLeft.parent = this.parent;
                         largestLeft.left = this.left;
                         largestLeft.right = this.right;
-                        if(this.left)
+                        if(this.left){
                             this.left.parent = largestLeft;
-                        if(this.right)
+                            largestLeft.leftLineId = this.leftLineId;
+                        }
+                        if(this.right){
                             this.right.parent = largestLeft;
-
+                            largestLeft.rightLineId = this.rightLineId;
+                        }
+ 
                         if(this.parent && this.value > this.parent.value){
                             //I am a right child
                             this.parent.rightLineId = createLine(this.parent.getX() + nodeEdge, this.parent.getY() + nodeEdge, this.parent.rightChildX() - nodeEdge, this.parent.getY() +100 - nodeEdge);
