@@ -121,7 +121,7 @@
         }
 
         async function translateElements(identifier, x, y){
-            console.log("Translating Elements: " + identifier + ", " + x + ", " + y);
+            //console.log("Translating Elements: " + identifier + ", " + x + ", " + y);
             const duration = 500; //animation time in ms
 
             els = $(identifier);
@@ -163,11 +163,11 @@
             //small timeout to buffer next animation
             $(identifier).each((i,p) => {
                 el = $(p);
-                console.log(identifier + " translation complete! new location: " + `(${el.attr('x') || el.attr('cx')},${el.attr('y') || el.attr('cy')})`);
+                //console.log(identifier + " translation complete! new location: " + `(${el.attr('x') || el.attr('cx')},${el.attr('y') || el.attr('cy')})`);
             })
             
             await new Promise(r => setTimeout(r,500));
-            console.log(identifier + " buffer complete");
+            //console.log(identifier + " buffer complete");
         }
 
         async function moveLine(identifier, x1, y1, x2, y2, duration=500){
@@ -373,7 +373,7 @@
                 }else{
                     res =  this.getX() - Math.abs(this.getX() - this.parent.getX())/2
                 }
-                console.log(this.value + "'s left child belongs at x:" + res);
+                //console.log(this.value + "'s left child belongs at x:" + res);
                 return res;
             }
 
@@ -384,7 +384,7 @@
                 }else{
                     res =  this.getX() + Math.abs(this.getX() - this.parent.getX())/2
                 }
-                console.log(this.value + "'s right child belongs at x:" + res);
+                //console.log(this.value + "'s right child belongs at x:" + res);
                 return res;
             }
 
@@ -494,6 +494,7 @@
                     await new Promise(r => setTimeout(r,500));
                     //delete inspector
                     $("#inspector").remove();
+                    canSubmit = true;
                 }
             }
 
@@ -596,13 +597,13 @@
                             largestLeft.left.parent = largestLeft.parent;
                             await translateElements(largestLeft.left.class, llx, lly);
                             largestLeft.parent.rightLineId = createLine(largestLeft.parent.getX() + nodeEdge, largestLeft.parent.getY() + nodeEdge, llx - nodeEdge, lly - nodeEdge);
-                            console.log("Seeting valiator to the left child of LL");
+                            //console.log("Seeting valiator to the left child of LL");
                             validator = largestLeft.left;
                         }else if(largestLeft.parent !== this){
-                            console.log("Setting validator to the parent of LL");
+                            //console.log("Setting validator to the parent of LL");
                             validator = largestLeft.parent;
                         }else{
-                            console.log("Setting validator to LL")
+                            //console.log("Setting validator to LL")
                             validator = largestLeft;
                         }
                         console.log("Replaced largest left node: ", largestLeft.parent);
@@ -655,15 +656,15 @@
                         }
                         //validate from this node up
                         if(this.right){
-                            console.log("setting validator to this.right");
+                            //console.log("setting validator to this.right");
                             validator = this.right;
                         }
                         else if(this.parent){
-                            console.log("setting validator to this.parent");
+                            //console.log("setting validator to this.parent");
                             validator = this.parent;
                         }
                         else{
-                            console.log("setting validator to null");
+                            //console.log("setting validator to null");
                             validator = null;
                         }
                     }
@@ -688,7 +689,7 @@
                     this.right.delete(v);
                 }else{
                     message.text("Value does not exist in tree");
-                    console.log("No such node to delete: " + v);
+                    //console.log("No such node to delete: " + v);
                     canSubmit = true;
                     $("#inspector").remove();
                 }
@@ -716,9 +717,8 @@
             //given a new translation destination for this node move it there 
             //along with all elements in the left subtree
             async bringLeft(x, y, cspace){
-                console.log(this.value + " is bringing Left");
+                console.log(this.value + " is bringing Left as it goes to " + x + "," + y);
                 //move this element to its specified location
-                console.log("New location: " + x + "," + y);
                 //tell its left child to move to the location to the left of this new one
                 //brin gall the left childs children
                 await translateElements(this.class, x, y)
