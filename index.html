@@ -56,8 +56,8 @@
         <select id="speed" name="speed">
             <option value=2000>Slow</option>
             <option value=500 selected>Normal</option>
-            <option value=200>Fast</option>
-            <option value=50>Instant</option>
+            <option value=50>Fast</option>
+            <option value=0>Instant</option>
         </select>
 
         <label for="inputType">Input type:</label>
@@ -606,6 +606,7 @@
                     await new Promise(r => setTimeout(r,animationSpeed));
                     var validator;
                     if (this.left){
+                        console.log("replacing with left child");
                         message.text("Finding largest node in left subtree as replacement");
                         //if the toDelete node has a left child replace it with the largest node in the left subtree
                         var largestLeft = this.left;
@@ -616,10 +617,13 @@
                         }
                         message.text("Largest left node is " + largestLeft.value);
                         //when the largest node is found, replace THAT node with ITS direct left child (may be null)
-                        if(largestLeft.value > largestLeft.parent.value){
+                        if(largestLeft.parent.right === largestLeft){
+                            //largest left is right child of its parent
+                            console.log("ll is a right child");
                             $(largestLeft.parent.rightLineId).remove();
                             largestLeft.parent.right = largestLeft.left;
                         }else{
+                            //largest left is left child of its parent
                             $(largestLeft.parent.leftLineId).remove();
                             largestLeft.parent.left = largestLeft.left;
                         }
@@ -634,9 +638,15 @@
                         await translateElements(largestLeft.class, old_x, old_y);
 
                         if(largestLeft.left){
-                            largestLeft.left.parent = largestLeft.parent;
+                            if(largestLeft.parent !== this)
+                                largestLeft.left.parent = largestLeft.parent;
                             await translateElements(largestLeft.left.class, llx, lly);
-                            largestLeft.parent.rightLineId = createLine(largestLeft.parent.getX() + nodeEdge, largestLeft.parent.getY() + nodeEdge, llx - nodeEdge, lly - nodeEdge);
+                            //in case largest left is till the parent of its left child
+                            if(largestLeft.left.parent.value >= largestLeft.left.value){
+                                largestLeft.left.parent.leftLineId = createLine(largestLeft.left.parent.getX() - nodeEdge, largestLeft.left.parent.getY() + nodeEdge, llx + nodeEdge, lly - nodeEdge);
+                            }else{
+                                largestLeft.left.parent.rightLineId = createLine(largestLeft.left.parent.getX() + nodeEdge, largestLeft.left.parent.getY() + nodeEdge, llx - nodeEdge, lly - nodeEdge);
+                            }
                             //console.log("Seeting valiator to the left child of LL");
                             validator = largestLeft.left;
                         }else if(largestLeft.parent !== this){
@@ -659,7 +669,7 @@
                             largestLeft.rightLineId = this.rightLineId;
                         }
  
-                        if(this.parent && this.value > this.parent.value){
+                        if(this.parent && this === this.parent.right){
                             //I am a right child
                             this.parent.rightLineId = createLine(this.parent.getX() + nodeEdge, this.parent.getY() + nodeEdge, this.parent.rightChildX() - nodeEdge, this.parent.getY() +100 - nodeEdge);
                             this.parent.right = largestLeft;
@@ -673,26 +683,29 @@
                         }
                         //validate from the replacement node's parent (validator runs at end of next else statement)
                     }else{
-                        console.log("Using right child as a replacement")
                         if(this.right){
                             $(this.rightLineId).remove();
                             await this.right.bringChildren(old_x, old_y);
                         }
                         //replace this node with its right child node (may be null)
-                        if(this.parent && this.value > this.parent.value){
+                        if(this.parent && this == this.parent.right){
                             //I am a right child
                             this.parent.right = this.right;
-                            if(this.right)
+                            if(this.right){
                                 this.right.parent = this.parent;
-                            else
+                                this.parent.rightLineId = createLine(this.parent.getX() + nodeEdge, this.parent.getY() + nodeEdge, this.parent.rightChildX() - nodeEdge, this.parent.getY() +100 - nodeEdge);
+                            }else{
                                 $(this.parent.rightLineId).remove();
+                            }
                         }else if(this.parent){
                             //I am a left child
                             this.parent.left = this.right;
-                            if(this.right)
+                            if(this.right){
                                 this.right.parent = this.parent;
-                            else
+                                this.parent.leftLineId = createLine(this.parent.getX() - nodeEdge, this.parent.getY() + nodeEdge, this.parent.leftChildX() + nodeEdge, this.parent.getY() + 100 - nodeEdge);
+                            }else{
                                 $(this.parent.leftLineId).remove();
+                            }
                         }else{
                             //I am root
                             this.right.parent = this.parent;
@@ -866,7 +879,8 @@
                 message.text("Performing a Right-Right rotation to fix the violaiton");
                 //remove lines connected to k1s parent
                 if(k1.parent){
-                    if(k1.value > k1.parent.value){
+                    if(k1 === k1.parent.right){
+                        //k1 is a right child
                         $(k1.parent.rightLineId).remove();
                     }else{
                         $(k1.parent.leftLineId).remove();
@@ -897,7 +911,7 @@
 
                 if(root === k1){
                     root = k2;
-                }else if(k2.parent.value < k2.value){
+                }else if(k2 === k2.parent.left){
                     //k2 is the left child of its parent
                     k2.parent.right = k2;
                 }else{
