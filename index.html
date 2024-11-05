@@ -46,21 +46,11 @@
             Clear
         </button>
 
+        <input type="text" id="random" placeholder="Number of keys in the random keyset"/>
         <button id="randomButton">
             Random Tree
         </button>
 
-        <button id="addShapeButton">
-            Add
-        </button>
-
-        <button id="moveShapeButton">
-            move
-        </button>
-
-        <button id="deleteShapeButton">
-            delete
-        </button>
     </div>
     <div id="message">
 
@@ -283,42 +273,64 @@
                 $('#mainSvg').empty();
             });
 
-            $("#randomButton").click(function(){
-                //temporary, displays all the nodes in console
-                if(root != null)
-                    root.display();
+            $("#randomButton").click(async function(){
+                if(canSubmit){
+                    canSubmit = false;
+                    //clear the existing tree
+                    root = null;
+                    //remove all svg children
+                    $('#mainSvg').empty();
+
+                    var n = $("#random").val();
+                    $("#random").val('');
+
+                    n = parseInt(n, 10);
+
+                    //generate n random integers
+                    let max = 999;
+                    let min = -999;
+
+                    const randomIntegers = [];
+
+                    for (let i = 0; i < n; i++) {
+                        const randomInt = Math.floor(Math.random() * (max - min + 1)) + min;
+                        randomIntegers.push(randomInt);
+                    }
+
+                    console.log(randomIntegers);
+
+                    async function insertValue(v){
+                        //insert the int into the tree
+
+                        //place a node with the value at the staging area
+                        var nodeClass = addNode(v, 0, 100);
+                        message.text("Adding node: " + v);
+                        //pause for dramatic effect
+                        await new Promise(r => setTimeout(r,200));
+                        const n = new Node(v, null, nodeClass);
+                        if(root == null){
+                            message.text("Adding new node at the root: " + n.value);
+                            //move the node to the root location
+                            await translateElements(nodeClass, $('#mainSvg').width()/2 ,50);
+                            root = n;
+                            canSubmit = true;
+                        }else{
+                            createInspector();
+                            await root.insert(n);
+                            canSubmit = false;
+                        }
+                    }
+                    
+                    for (const v of randomIntegers){
+                        console.log("inserting " + v);
+                        await insertValue(v);
+                    }
+
+                    canSubmit=true;
+                    
+                }
             });
 
-            //extra buttons for testing animations
-            $("#addShapeButton").click(function(){
-                console.log("Add shape clicked");
-                var w = $("#mainSvg").width();
-                var h = $("#mainSvg").height();
-                addNode(9, 200, 200);
-                createLine(300, 100, 100, 300);
-            });
-
-            $("#moveShapeButton").click(async function(){
-                console.log("move clicked");
-                //await translateElements(".node_0", 100, 100);
-                
-                //await translateElements(".node_0", 300, 300);
-
-                //await translateElements(".node_0", 100, 300);
-
-                //await translateElements(".node_0", 400, 100);
-
-                await moveLine("#line_0", 100, 300, 300, 100)
-
-                await moveLine("#line_0", 100, 100, 200, 200);
-                console.log("move all done");
-            });
-
-            $("#deleteShapeButton").click(function(){
-                console.log("delete shape clicked");
-                for(let i = 100; i < 1000; i+= 100)
-                    addText(i, {x:i, y:50});
-            })
         });
 
         class Node {
@@ -446,7 +458,7 @@
                 }
                 //have the parent continue validating
                 if(this.parent){
-                    this.parent.validateTree();
+                    await this.parent.validateTree();
                 }else{
                     message.text("Done")
                     $("#inspector").remove()
@@ -519,7 +531,7 @@
                         await this.validateTree();
                         canSubmit = true;
                     }else{
-                        this.left.insert(n);
+                        await this.left.insert(n);
                     }
                 }else{
                     //check right side for insert location
@@ -538,7 +550,7 @@
                         await this.validateTree();
                         canSubmit = true;
                     }else{
-                        this.right.insert(n);
+                        await this.right.insert(n);
                     }
                 }
             }
