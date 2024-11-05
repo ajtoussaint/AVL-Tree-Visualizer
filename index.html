@@ -729,71 +729,138 @@
             //given a new translation destination for this node move it there 
             //along with all elements in the left subtree
             async bringLeft(x, y, cspace){
-                console.log(this.value + " is bringing Left as it goes to " + x + "," + y);
+                //determine ascending or descending
+                let ascending = y <= this.getY();
+                console.log(this.value + " is bringing Left as it goes to " + x + "," + y + " (ascending=" + ascending + ")");
                 //move this element to its specified location
                 //tell its left child to move to the location to the left of this new one
-                //brin gall the left childs children
-                await translateElements(this.class, x, y)
+                if(ascending){
+                    //brin gall the left childs children
+                    await translateElements(this.class, x, y)
 
-                if(this.left){
-                    //move the line and make it black (in case of violation)
-                    $(this.leftLineId).attr("stroke", "black");
+                    if(this.left){
+                        //move the line and make it black (in case of violation)
+                        $(this.leftLineId).attr("stroke", "black");
+                        
+                        //move the child to its position
+                        var left_x = cspace ? x - cspace : this.leftChildX();
+                        var left_y = y + 100;
+
+                        await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , left_y - nodeEdge);
+
+                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + left_y + ")");
+                        await this.left.bringChildren(left_x, left_y);
+                    }
+                }else{
+                    //reverse order to move down
+                    //calculate cpsace for child use
                     
-                    //move the child to its position
-                    var left_x = cspace ? x - cspace : this.leftChildX();
-                    var left_y = y + 100;
 
-                    await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , left_y - nodeEdge);
+                    if(this.left){
+                        //move the line and make it black (in case of violation)
+                        $(this.leftLineId).attr("stroke", "black");
+                        
+                        //move the child to its position
+                        var left_x = cspace ? x - cspace : this.leftChildX();
+                        var left_y = y + 100;
 
-                    console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + left_y + ")");
-                    await this.left.bringChildren(left_x, left_y);
-                }
-                
+                        let ccspace = Math.abs(left_x - x)/2;
+
+                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + left_y + ")");
+                        await this.left.bringChildren(left_x, left_y, ccspace);
+                        await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , left_y - nodeEdge);
+                    }
+                    await translateElements(this.class, x, y)
+                }  
             }
 
             async bringChildren(x, y, cspace){
+                let ascending = y <= this.getY();
                 console.log(this.value + " is bringing Children ");
 
-                await translateElements(this.class, x, y);
+                if(ascending){
+                    await translateElements(this.class, x, y);
 
-                var left_x = cspace ? x - cspace : this.leftChildX();
-                var new_y = y + 100;
-                var right_x = cspace ? x + cspace : this.rightChildX();
+                    var left_x = cspace ? x - cspace : this.leftChildX();
+                    var new_y = y + 100;
+                    var right_x = cspace ? x + cspace : this.rightChildX();
 
-                if(this.right){
-                    $(this.rightLineId).attr("stroke", "black");
-                    await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , new_y - nodeEdge);
-                    console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
-                    await this.right.bringChildren(right_x, new_y);
-                }
+                    if(this.right){
+                        $(this.rightLineId).attr("stroke", "black");
+                        await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , new_y - nodeEdge);
+                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
+                        await this.right.bringChildren(right_x, new_y);
+                    }
 
-                if(this.left){
-                    $(this.leftLineId).attr("stroke", "black");
-                    await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , new_y - nodeEdge);
-                    console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + new_y + ")");
-                    await this.left.bringChildren(left_x, new_y);
+                    if(this.left){
+                        $(this.leftLineId).attr("stroke", "black");
+                        await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , new_y - nodeEdge);
+                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + new_y + ")");
+                        await this.left.bringChildren(left_x, new_y);
+                    } 
+                }else{
+                    //descending
+                    var left_x = cspace ? x - cspace : this.leftChildX();
+                    var new_y = y + 100;
+                    var right_x = cspace ? x + cspace : this.rightChildX();
+
+                    //calculate cpsace for child use
+                    let ccspace = Math.abs(right_x - x)/2;
+                    //reverse order to move down
+                    if(this.right){
+                        $(this.rightLineId).attr("stroke", "black");
+                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
+                        await this.right.bringChildren(right_x, new_y, ccspace);
+                        await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , new_y - nodeEdge);
+                    }
+
+                    if(this.left){
+                        $(this.leftLineId).attr("stroke", "black");
+                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + new_y + ")");
+                        await this.left.bringChildren(left_x, new_y, ccspace);
+                        await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , new_y - nodeEdge);
+                    } 
+
+                    await translateElements(this.class, x, y);
                 }          
             }
 
             async bringRight(x,y, cspace){
+                let ascending = y <= this.getY();
                 console.log(this.value + " is bringing Right");
 
-                await translateElements(this.class, x, y)
+                if(ascending){
+                    await translateElements(this.class, x, y)
 
-                if(this.right){
-                    $(this.rightLineId).attr("stroke", "black");
+                    if(this.right){
+                        $(this.rightLineId).attr("stroke", "black");
 
-                    //use predefined cspace in case parent is out of position to calculate rightChildX
-                    var right_x = cspace ? x + cspace : this.rightChildX();                    
-                    var right_y = y + 100;
+                        //use predefined cspace in case parent is out of position to calculate rightChildX
+                        var right_x = cspace ? x + cspace : this.rightChildX();                    
+                        var right_y = y + 100;
 
-                    await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , right_y - nodeEdge);
+                        await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , right_y - nodeEdge);
 
-                    console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
-                    await this.right.bringChildren(right_x, right_y);
+                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
+                        await this.right.bringChildren(right_x, right_y);
+                    }
+                }else{
+                    //calculate cpsace for child use
+                    if(this.right){
+                        $(this.rightLineId).attr("stroke", "black");
+
+                        //use predefined cspace in case parent is out of position to calculate rightChildX
+                        var right_x = cspace ? x + cspace : this.rightChildX();                    
+                        var right_y = y + 100;
+
+                        let ccspace = Math.abs(right_x - x)/2;
+
+                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
+                        await this.right.bringChildren(right_x, right_y, ccspace);//descending
+                        await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , right_y - nodeEdge);
+                    }
+                    await translateElements(this.class, x, y)
                 }
-
-                
             }
         }
 
@@ -859,7 +926,16 @@
                 if(k2.leftLineId){
                     $(k2.leftLineId).remove();
                 }
-                await k2.bringRight(k2x, k2y);
+
+                await translateElements(k2.class, k2x, k2y);
+
+                //k2s left child moves to be k1s right child in k1s new position
+                if(k2l){
+                    await k2l.bringChildren(k1.rightChildX(), k1.getY() + 100)//lateral
+                    k1.rightLineId = createLine(k1.getX() + nodeEdge, k1.getY() + nodeEdge, k2l.getX() - nodeEdge, k2l.getY() - nodeEdge);
+                }
+
+                await k2.bringRight(k2x, k2y);//always goes up
                 console.log("moved k2 and its subtree");
 
                 //create new leftchild line for k2
@@ -874,12 +950,6 @@
                         //k2 is left child
                         k2.parent.leftLineId = createLine(k2.parent.getX() - nodeEdge, k2.parent.getY() + nodeEdge, k2.getX() + nodeEdge, k2.getY() - nodeEdge);
                     }
-                }
-
-                //k2s left child moves to be k1s right child in k1s new position
-                if(k2l){
-                    await k2l.bringChildren(k1.rightChildX(), k1.getY() + 100)
-                    k1.rightLineId = createLine(k1.getX() + nodeEdge, k1.getY() + nodeEdge, k2l.getX() - nodeEdge, k2l.getY() - nodeEdge);
                 }
                 
             }else if(firstIsRight && !secondIsRight){
@@ -968,11 +1038,11 @@
 
                 //move k3s left child to be k1's right child
                 if(k3l){
-                    await k3l.bringChildren(k1.rightChildX(), k1.getY() + 100);
+                    await k3l.bringChildren(k1.rightChildX(), k1.getY() + 100);//ascending
                     k1.rightLineId = createLine(k1.getX() + nodeEdge, k1.getY() + nodeEdge, k1.rightChildX() - nodeEdge, k1.getY() + 100 - nodeEdge);
                 }
                 if(k3r){
-                    await k3r.bringChildren(k2.leftChildX(), k2.getY() + 100);
+                    await k3r.bringChildren(k2.leftChildX(), k2.getY() + 100);//ascending
                     k2.leftLineId = createLine(k2.getX() - nodeEdge, k2.getY() + nodeEdge, k2.leftChildX() + nodeEdge, k2.getY() + 100 - nodeEdge)
                 }
 
@@ -1062,11 +1132,11 @@
 
                 //move k3s old children to new spots
                 if(k3l){
-                    await k3l.bringChildren(k2.rightChildX(), k2.getY() + 100);
+                    await k3l.bringChildren(k2.rightChildX(), k2.getY() + 100);//ascending
                     k2.rightLineId = createLine(k2.getX() + nodeEdge, k2.getY() + nodeEdge, k2.rightChildX() - nodeEdge, k2.getY() + 100 - nodeEdge);
                 }
                 if(k3r){
-                    await k3r.bringChildren(k1.leftChildX(), k1.getY() +100);
+                    await k3r.bringChildren(k1.leftChildX(), k1.getY() +100);//ascending
                     k1.leftLineId = createLine(k1.getX() - nodeEdge, k1.getY() + nodeEdge, k1.leftChildX() + nodeEdge, k1.getY() + 100 - nodeEdge);
                 }
 
@@ -1126,7 +1196,18 @@
                 if(k2.rightLineId){
                     $(k2.rightLineId).remove();
                 }
-                await k2.bringLeft(k2x, k2y);
+
+                await translateElements(k2.class, k2x, k2y);
+
+                //k2's right child moves to be k1's left child in k1's new position
+                if(k2r){
+                    console.log("k2 has right child, moving...")
+                    //move k2's right child's subtree with it
+                    await k2r.bringChildren(k1.leftChildX(),k1.getY() + 100)//lateral
+                    k1.leftLineId = createLine(k1.getX() - nodeEdge, k1.getY() + nodeEdge, k2r.getX() + nodeEdge, k2r.getY() - nodeEdge);
+                }
+
+                await k2.bringLeft(k2x, k2y);//always goes up
                 console.log("moved k2 and its subtree");
                 //create new right child line for k2
                 k2.rightLineId = createLine(k2.getX() + nodeEdge, k2.getY() + nodeEdge, k2.rightChildX() - nodeEdge, 100 + k2.getY() - nodeEdge);
@@ -1140,13 +1221,7 @@
                         k2.parent.leftLineId = createLine(k2.parent.getX() - nodeEdge, k2.parent.getY() + nodeEdge, k2.getX() + nodeEdge, k2.getY() - nodeEdge);
                     }
                 }
-                //k2's right child moves to be k1's left child in k1's new position
-                if(k2r){
-                    console.log("k2 has right child, moving...")
-                    //move k2's right child's subtree with it
-                    await k2r.bringChildren(k1.leftChildX(),k1.getY() + 100)
-                    k1.leftLineId = createLine(k1.getX() - nodeEdge, k1.getY() + nodeEdge, k2r.getX() + nodeEdge, k2r.getY() - nodeEdge);
-                }
+                
 
             }
             console.log("Rotation Complete");
