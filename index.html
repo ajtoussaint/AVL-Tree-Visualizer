@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AVL Tree Visualizer</title>
+    <!--By Andrew Toussaint-->
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
@@ -110,7 +111,7 @@
             addShape("circle", {cx:x, cy:y, r:nodeRadius, stroke:"black", "stroke-width":3, fill:"white", id:"circle_"+nodeIdCounter, class:nodeClass});
             addText(value, {x:x, y:y, "text-anchor":"middle", "dominant-baseline":"middle", "font-family":"monospace", "font-size":"20", "fill":"black", id:"text_" + nodeIdCounter, class:nodeClass});
             nodeIdCounter += 1;
-            return "." +nodeClass;
+            return "." + nodeClass;
         }
 
         function createInspector(){
@@ -120,16 +121,14 @@
         }
 
         function createLine(x1, y1, x2, y2){
-            var str = "line_"+lineIdCounter;
+            var str = "line_" + lineIdCounter;
             addShape("line", {x1:x1, y1:y1, x2:x2, y2:y2, stroke:"black", "stroke-width":"3", id:str})
             lineIdCounter += 1;
             return "#" + str;
         }
 
         async function translateElements(identifier, x, y){
-            //console.log("Translating Elements: " + identifier + ", " + x + ", " + y);
-            const duration = parseInt(animationSpeed); //animation time in ms
-            console.log("Duration is " + duration + " based on " + animationSpeed);
+            const duration = parseInt(animationSpeed); //animation time in ms, controlled by dropdown
             els = $(identifier);
 
             els.each((i, p) => {
@@ -167,17 +166,10 @@
             })
 
             //small timeout to buffer next animation
-            $(identifier).each((i,p) => {
-                el = $(p);
-                //console.log(identifier + " translation complete! new location: " + `(${el.attr('x') || el.attr('cx')},${el.attr('y') || el.attr('cy')})`);
-            })
-            
             await new Promise(r => setTimeout(r,animationSpeed));
-            //console.log(identifier + " buffer complete");
         }
 
         async function moveLine(identifier, x1, y1, x2, y2, duration=animationSpeed){
-            console.log("Moving Line " + identifier + " to location [(" + x1 +", " + y1 + ")(" + x2 + ", " + y2 + ")]");
             el = $(identifier);
             const old_x1 = parseFloat(el.attr("x1"));
             const old_y1 = parseFloat(el.attr("y1"));
@@ -260,7 +252,14 @@
                     canSubmit = false;
 
                     var value = $("#delete").val();
-                    value = parseInt(value, 10);
+                    if(inputType == "number"){
+                        value = parseFloat(value);
+                        if(isNaN(value)){
+                        message.text("Invalid input, change input type to use characters")
+                        canSubmit = true;
+                        return;
+                        }
+                    }
                     $("#delete").val('');
                     $("#message").text("Deleting " + value);
 
@@ -278,7 +277,14 @@
                 if(canSubmit){
                     canSubmit = false;
                     var value = $('#find').val();
-                    value = parseInt(value, 10);
+                    if(inputType == "number"){
+                        value = parseFloat(value);
+                        if(isNaN(value)){
+                        message.text("Invalid input, change input type to use characters")
+                        canSubmit = true;
+                        return;
+                        }
+                    }
                     if(root){
                         createInspector();
                         root.find(value);
@@ -419,7 +425,7 @@
                 if(this.right != null)
                     r = this.right.getHeight();
 
-                return r - l; //positive = right tree heavy, negative = left tree heavy, 0 = balanced
+                return l - r; //positive = left tree heavy, negative = right tree heavy, 0 = balanced
             }
 
             getX(){
@@ -431,48 +437,29 @@
             }
 
             leftChildX(){
-                let res;
-                if(!this.parent){
-                    res =  this.getX() / 2;
-                }else{
-                    res =  this.getX() - Math.abs(this.getX() - this.parent.getX())/2
-                }
-                //console.log(this.value + "'s left child belongs at x:" + res);
-                return res;
+                return this.parent ? this.getX() - Math.abs(this.getX() - this.parent.getX())/2 : this.getX() / 2;
             }
 
             rightChildX(){
-                let res;
-                if(!this.parent){
-                    res = this.getX() * 1.5;
-                }else{
-                    res =  this.getX() + Math.abs(this.getX() - this.parent.getX())/2
-                }
-                //console.log(this.value + "'s right child belongs at x:" + res);
-                return res;
+                return this.parent ? this.getX() + Math.abs(this.getX() - this.parent.getX())/2 : this.getX() * 1.5;
             }
 
             async validateTree(){
                 const message = $("#message");
                 message.text("Validating subtree at node " + this.value);
-                console.log("validating Tree at node: " + this.value);
+
                 //move the inspector to this element for validation
                 await translateElements('#inspector', this.getX(), this.getY());
 
-                var l = -1;
-                var r = -1;
-                if(this.left != null)
-                    l = this.left.getHeight();
-                if(this.right != null)
-                    r = this.right.getHeight();
+                var balance = this.getBalance();
 
-                if(Math.abs(l - r) > 1){
+                if(Math.abs(balance) > 1){
                     $("#inspector").attr("stroke", "red");
                     message.text("Subtree at node " + this.value + " is invalid!");
                     //fix the problem at this subtree
                     var k1 = this;
                     var k2, k3;
-                    if(l - r > 0){
+                    if(balance > 0){
                         //left subtree is heavy
                         k2 = this.left;
                         //set the left path color to red
@@ -483,14 +470,9 @@
                         $(this.rightLineId).attr("stroke", "red");
                     }
 
-                    var l2 = -1;
-                    var r2 = -1;
-                    if(k2.left != null)
-                        l2 = k2.left.getHeight();
-                    if(k2.right != null)
-                        r2 = k2.right.getHeight();
+                    var balance2 = k2.getBalance();
 
-                    if(l2 - r2 > 0){
+                    if(balance2 > 0){
                         //left sub subtree is heavy
                         k3 = k2.left;
                         $(k2.leftLineId).attr("stroke", "red");
@@ -505,8 +487,7 @@
 
                     console.log("Validate Tree has chosen these nodes to fix a violation: ", k1, k2, k3);
                     await fixViolation(k1, k2, k3);
-                    $("#inspector").attr("stroke", "blue");
-                    
+                    $("#inspector").attr("stroke", "blue"); //violation fixed, set inspector blue 
                 }
                 //have the parent continue validating
                 if(this.parent){
@@ -514,8 +495,7 @@
                 }else{
                     message.text("Done")
                     $("#inspector").remove()
-                }
-                    
+                }     
             }
 
             async find(v){
@@ -565,7 +545,6 @@
 
             async insert(n){
                 const message = $("#message");
-                message.text('Checking node: ' + this.value + " for insertion spot");
                 if(n.value <= this.value){
                     //check left side for insert location
                     message.text(n.value + '<=' + this.value);
@@ -609,7 +588,6 @@
 
             async delete(v){
                 const message = $("#message");
-
                 //go until you are the node to delete
                 if(this.value == v){
                     //delete this node
@@ -636,7 +614,6 @@
                             largestLeft = largestLeft.right;
                             await translateElements("#inspector", largestLeft.getX(), largestLeft.getY());
                         }
-                        console.log("Found largest left node: " + largestLeft.value);
                         message.text("Largest left node is " + largestLeft.value);
                         //when the largest node is found, replace THAT node with ITS direct left child (may be null)
                         if(largestLeft.value > largestLeft.parent.value){
@@ -646,8 +623,7 @@
                             $(largestLeft.parent.leftLineId).remove();
                             largestLeft.parent.left = largestLeft.left;
                         }
-
-                        //delete LLs connection to child
+                        //delete ll's connection to child
                         if(largestLeft.left)
                             $(largestLeft.leftLineId).remove();
                         //save ll's current location to move its child
@@ -670,7 +646,6 @@
                             //console.log("Setting validator to LL")
                             validator = largestLeft;
                         }
-                        console.log("Replaced largest left node: ", largestLeft.parent);
                         //then place the largst left node in this existing node's place
                         largestLeft.parent = this.parent;
                         largestLeft.left = this.left;
@@ -689,9 +664,9 @@
                             this.parent.leftLineId = createLine(this.parent.getX() - nodeEdge, this.parent.getY() + nodeEdge, this.parent.leftChildX() + nodeEdge, this.parent.getY() + 100 - nodeEdge);
                             this.parent.left = largestLeft;
                         }else{
+                            //I am root
                             root = largestLeft;
-                        }//otherwise root is deleted and no parent need be changed
-                        console.log("Moved the largest left node to its repalcement position: ", largestLeft, largestLeft.parent);
+                        }
                         //validate from the replacement node's parent (validator runs at end of next else statement)
                     }else{
                         console.log("Using right child as a replacement")
@@ -715,25 +690,21 @@
                             else
                                 $(this.parent.leftLineId).remove();
                         }else{
+                            //I am root
                             this.right.parent = this.parent;
                             root = this.right;
                         }
                         //validate from this node up
                         if(this.right){
-                            //console.log("setting validator to this.right");
                             validator = this.right;
                         }
                         else if(this.parent){
-                            //console.log("setting validator to this.parent");
                             validator = this.parent;
                         }
                         else{
-                            //console.log("setting validator to null");
                             validator = null;
                         }
                     }
-
-                    console.log("Validator is ",  validator);
 
                     if(validator)
                         await validator.validateTree();
@@ -753,29 +724,9 @@
                     this.right.delete(v);
                 }else{
                     message.text("Value does not exist in tree");
-                    //console.log("No such node to delete: " + v);
                     canSubmit = true;
                     $("#inspector").remove();
-                }
-
-                
-            }
-            
-            display(){
-                var v1 = this.value;
-                var v2 = "null";
-                var v3 = "null";
-
-                if(this.left != null)
-                    v2 = this.left.value;
-                if(this.right != null)
-                    v3 = this.right.value;
-
-                console.log(v1 + ":" + v2 + "," + v3);
-                if(this.left != null)
-                    this.left.display();
-                if(this.right != null)
-                    this.right.display();
+                }   
             }
 
             //given a new translation destination for this node move it there 
@@ -783,7 +734,6 @@
             async bringLeft(x, y, cspace){
                 //determine ascending or descending
                 let ascending = y <= this.getY();
-                console.log(this.value + " is bringing Left as it goes to " + x + "," + y + " (ascending=" + ascending + ")");
                 //move this element to its specified location
                 //tell its left child to move to the location to the left of this new one
                 if(ascending){
@@ -797,17 +747,12 @@
                         //move the child to its position
                         var left_x = cspace ? x - cspace : this.leftChildX();
                         var left_y = y + 100;
-
                         await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , left_y - nodeEdge);
-
-                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + left_y + ")");
                         await this.left.bringChildren(left_x, left_y);
                     }
                 }else{
                     //reverse order to move down
                     //calculate cpsace for child use
-                    
-
                     if(this.left){
                         //move the line and make it black (in case of violation)
                         $(this.leftLineId).attr("stroke", "black");
@@ -818,7 +763,6 @@
 
                         let ccspace = Math.abs(left_x - x)/2;
 
-                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + left_y + ")");
                         await this.left.bringChildren(left_x, left_y, ccspace);
                         await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , left_y - nodeEdge);
                     }
@@ -828,7 +772,6 @@
 
             async bringChildren(x, y, cspace){
                 let ascending = y <= this.getY();
-                console.log(this.value + " is bringing Children ");
 
                 if(ascending){
                     await translateElements(this.class, x, y);
@@ -840,14 +783,12 @@
                     if(this.right){
                         $(this.rightLineId).attr("stroke", "black");
                         await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , new_y - nodeEdge);
-                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
                         await this.right.bringChildren(right_x, new_y);
                     }
 
                     if(this.left){
                         $(this.leftLineId).attr("stroke", "black");
                         await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , new_y - nodeEdge);
-                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + new_y + ")");
                         await this.left.bringChildren(left_x, new_y);
                     } 
                 }else{
@@ -861,25 +802,21 @@
                     //reverse order to move down
                     if(this.right){
                         $(this.rightLineId).attr("stroke", "black");
-                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + new_y + ")");
                         await this.right.bringChildren(right_x, new_y, ccspace);
                         await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , new_y - nodeEdge);
                     }
 
                     if(this.left){
                         $(this.leftLineId).attr("stroke", "black");
-                        console.log(this.value + " Tells its left child, " + this.left.value + " to go to (" + left_x + ", " + new_y + ")");
                         await this.left.bringChildren(left_x, new_y, ccspace);
                         await moveLine(this.leftLineId, x - nodeEdge, y + nodeEdge, left_x + nodeEdge , new_y - nodeEdge);
                     } 
-
                     await translateElements(this.class, x, y);
                 }          
             }
 
             async bringRight(x,y, cspace){
                 let ascending = y <= this.getY();
-                console.log(this.value + " is bringing Right");
 
                 if(ascending){
                     await translateElements(this.class, x, y)
@@ -892,8 +829,6 @@
                         var right_y = y + 100;
 
                         await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , right_y - nodeEdge);
-
-                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
                         await this.right.bringChildren(right_x, right_y);
                     }
                 }else{
@@ -907,7 +842,6 @@
 
                         let ccspace = Math.abs(right_x - x)/2;
 
-                        console.log(this.value + " Tells its right child, " + this.right.value + " to go to (" + right_x + ", " + right_y + ")");
                         await this.right.bringChildren(right_x, right_y, ccspace);//descending
                         await moveLine(this.rightLineId, x + nodeEdge, y + nodeEdge, right_x - nodeEdge , right_y - nodeEdge);
                     }
@@ -925,9 +859,7 @@
             
             if(firstIsRight && secondIsRight){
                 //Right right rotation
-                console.log("RR rotation");
                 message.text("Performing a Right-Right rotation to fix the violaiton");
-
                 //remove lines connected to k1s parent
                 if(k1.parent){
                     if(k1.value > k1.parent.value){
@@ -936,12 +868,10 @@
                         $(k1.parent.leftLineId).remove();
                     }
                 }
-
                 //remove k1s right child line
                 $(k1.rightLineId).remove();
 
                 //calculate new positions
-
                 //k1 moves to the spot for its left child
                 var k1x = k1.leftChildX();
                 var k1y = k1.getY() + 100;
@@ -969,10 +899,10 @@
                 }else{
                     k2.parent.left = k2;
                 }
+
                 //calculate cspace for k1 to move its children appropriately
                 var cspace = Math.abs(k1.getX() - k1x)/2;
                 await k1.bringLeft(k1x, k1y, cspace);
-                console.log("moved k1 and its subtree");
 
                 //move k2 to k1s old spot along with its right subtree
                 if(k2.leftLineId){
@@ -988,7 +918,6 @@
                 }
 
                 await k2.bringRight(k2x, k2y);//always goes up
-                console.log("moved k2 and its subtree");
 
                 //create new leftchild line for k2
                 k2.leftLineId = createLine(k2.getX() - nodeEdge, k2.getY() + nodeEdge, k2.leftChildX() + nodeEdge, k2.getY() + 100 - nodeEdge)
@@ -1006,7 +935,6 @@
                 
             }else if(firstIsRight && !secondIsRight){
                 //Right left rotation
-                console.log("RL rotation");
                 message.text("Performing a Right-Left rotation to fix the violation");
 
                 //remove the right line and parent line connected to k1:
@@ -1063,7 +991,6 @@
                 var cspace = Math.abs(k1.getX() - k1x)/2;
                 //move k1 to its locaiton along with its left child
                 await k1.bringLeft(k1x, k1y, cspace);
-                console.log("moved k1 and its subtree");
                 //move k3 to k1s old spot
                 if(k3.rightLineId){
                     $(k3.rightLineId).remove();
@@ -1073,7 +1000,6 @@
                 }
                 $(k2.leftLineId).remove();
                 await translateElements(k3.class, k3x, k3y);
-                console.log("moved k3 to its correct location");
                 //create child lines for k3
                 k3.rightLineId = createLine(k3.getX() + nodeEdge, k3.getY() + nodeEdge, k3.rightChildX() - nodeEdge, 100 + k3.getY() - nodeEdge);
                 k3.leftLineId = createLine(k3.getX() - nodeEdge, k3.getY() + nodeEdge, k3.leftChildX() + nodeEdge, 100 + k3.getY() - nodeEdge);
@@ -1087,7 +1013,6 @@
                         k3.parent.leftLineId = createLine(k3.parent.getX() - nodeEdge, k3.parent.getY() + nodeEdge, k3.getX() + nodeEdge, k3.getY() - nodeEdge);
                     }
                 }
-
                 //move k3s left child to be k1's right child
                 if(k3l){
                     await k3l.bringChildren(k1.rightChildX(), k1.getY() + 100);//ascending
@@ -1097,11 +1022,8 @@
                     await k3r.bringChildren(k2.leftChildX(), k2.getY() + 100);//ascending
                     k2.leftLineId = createLine(k2.getX() - nodeEdge, k2.getY() + nodeEdge, k2.leftChildX() + nodeEdge, k2.getY() + 100 - nodeEdge)
                 }
-
-
             }else if(!firstIsRight && secondIsRight){
                 //Left Right rotation
-                console.log("LR rotation");
                 message.text("Performing a Left-Right rotation to fix the violation");
 
                 //remove the left line and parent line connected to k1
@@ -1156,7 +1078,6 @@
                 var cspace = Math.abs(k1.getX() - k1x)/2;
                 //move k1 to its new location along with right child
                 await k1.bringRight(k1x, k1y, cspace);
-                console.log("moved k1 and its subtree");
                 //move k3 to k1s old spot
                 if(k3.rightLineId){
                     $(k3.rightLineId).remove();
@@ -1167,7 +1088,7 @@
                 $(k2.rightLineId).remove();
 
                 await translateElements(k3.class, k3x, k3y);
-                console.log("moved k3");
+
                 //creaet child lines for k3
                 k3.rightLineId = createLine(k3.getX() + nodeEdge, k3.getY() + nodeEdge, k3.rightChildX() - nodeEdge, 100 + k3.getY() - nodeEdge);
                 k3.leftLineId = createLine(k3.getX() - nodeEdge, k3.getY() + nodeEdge, k3.leftChildX() + nodeEdge, 100 + k3.getY() - nodeEdge);
@@ -1194,7 +1115,6 @@
 
             }else{
                 //Left left rotation
-                console.log("LL rotation");
                 message.text("Performing a Left-Left rotation to fix the violation")
 
                 //remove lines connected to k1s parent
@@ -1231,7 +1151,6 @@
                 k1.parent = k2;
                 
                 if(root === k1){
-                    console.log("Changing root from " + k1.value + " to " + k2.value)
                     root = k2;
                 }else if(k2.parent.value < k2.value){
                     k2.parent.right = k2;
@@ -1243,7 +1162,6 @@
                 var cspace = Math.abs(k1.getX() - k1x)/2;
                 
                 await k1.bringRight(k1x, k1y, cspace);
-                console.log("moved k1 and its subtree");
                 //move k2 to k1's old spot with its left subtree
                 if(k2.rightLineId){
                     $(k2.rightLineId).remove();
@@ -1253,14 +1171,12 @@
 
                 //k2's right child moves to be k1's left child in k1's new position
                 if(k2r){
-                    console.log("k2 has right child, moving...")
                     //move k2's right child's subtree with it
                     await k2r.bringChildren(k1.leftChildX(),k1.getY() + 100)//lateral
                     k1.leftLineId = createLine(k1.getX() - nodeEdge, k1.getY() + nodeEdge, k2r.getX() + nodeEdge, k2r.getY() - nodeEdge);
                 }
 
                 await k2.bringLeft(k2x, k2y);//always goes up
-                console.log("moved k2 and its subtree");
                 //create new right child line for k2
                 k2.rightLineId = createLine(k2.getX() + nodeEdge, k2.getY() + nodeEdge, k2.rightChildX() - nodeEdge, 100 + k2.getY() - nodeEdge);
                 //restore connection to k2s new parent if necessary
@@ -1276,11 +1192,8 @@
                 
 
             }
-            console.log("Rotation Complete");
-            root.display();
             message.text("Violation Resolved");
         }
-
     </script>
 </body>
 </html>
