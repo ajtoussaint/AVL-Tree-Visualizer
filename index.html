@@ -46,7 +46,7 @@
             Clear
         </button>
 
-        <input type="text" id="random" placeholder="Number of keys in the random keyset"/>
+        <input type="text" id="random" placeholder="# of keys to add"/>
         <button id="randomButton">
             Random Tree
         </button>
@@ -57,6 +57,12 @@
             <option value=500 selected>Normal</option>
             <option value=200>Fast</option>
             <option value=50>Instant</option>
+        </select>
+
+        <label for="inputType">Input type:</label>
+        <select id="inputType" name="inputType">
+            <option value='number' selected>Numerical</option>
+            <option value='string' >Character</option>
         </select>
 
     </div>
@@ -97,6 +103,7 @@
         var lineIdCounter = 0;
         var canSubmit = true;
         var animationSpeed = 500;
+        var inputType = "number";
 
         function addNode(value, x, y){
             var nodeClass = "node_" + nodeIdCounter
@@ -129,8 +136,6 @@
                 el = $(p);
                 var old_x = el.attr("x") ?? el.attr("cx");
                 var old_y = el.attr("y") ?? el.attr("cy");
-
-                console.log(duration, x, y, old_x, old_y);
 
                 const animation = p.animate(
                     [
@@ -220,7 +225,15 @@
                 if(canSubmit){
                     canSubmit = false;
                     var value = $("#insert").val();
-                    value = parseInt(value, 10);
+                    if(inputType == "number"){
+                        value = parseFloat(value);
+                        if(isNaN(value)){
+                        message.text("Invalid input, change input type to use characters")
+                        canSubmit = true;
+                        return;
+                        }
+                    }
+                        
                     $("#insert").val('');
 
                     //place a node with the value at the staging area
@@ -300,15 +313,29 @@
                     //generate n random integers
                     let max = 999;
                     let min = -999;
+                    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?';
 
-                    const randomIntegers = [];
+                    const randomValues = [];
 
-                    for (let i = 0; i < n; i++) {
-                        const randomInt = Math.floor(Math.random() * (max - min + 1)) + min;
-                        randomIntegers.push(randomInt);
+                    if(inputType === "number"){
+                       for (let i = 0; i < n; i++) {
+                            const randomInt = Math.floor(Math.random() * (max - min + 1)) + min;
+                            randomValues.push(randomInt);
+                        } 
                     }
+                    else{
+                        for(var i = 0; i < n; i++){    
+                            var randomStr = '';
+                            const randomStrLen = Math.floor(Math.random() * 3) + 1;
+                            for (let j = 0; j < randomStrLen; j++){
+                                randomStr += characters.charAt(Math.floor(Math.random() * characters.length));
+                            }
+                            randomValues.push(randomStr);
+                        }
+                    }
+                    
 
-                    console.log(randomIntegers);
+                    console.log(randomValues);
 
                     async function insertValue(v){
                         //insert the int into the tree
@@ -332,7 +359,7 @@
                         }
                     }
                     
-                    for (const v of randomIntegers){
+                    for (const v of randomValues){
                         console.log("inserting " + v);
                         await insertValue(v);
                     }
@@ -345,6 +372,16 @@
             $("#speed").change(function(){
                 console.log("speed is " + $(this).val());
                 animationSpeed = $(this).val();
+            })
+
+            $("#inputType").change(function(){
+                //clear the existing tree
+                root = null;
+                    //remove all svg children
+                $('#mainSvg').empty();
+
+                console.log("type is " + $(this).val());
+                inputType = $(this).val();
             })
         });
 
@@ -750,7 +787,7 @@
                 //move this element to its specified location
                 //tell its left child to move to the location to the left of this new one
                 if(ascending){
-                    //brin gall the left childs children
+                    //bring all the left childs children
                     await translateElements(this.class, x, y)
 
                     if(this.left){
