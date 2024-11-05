@@ -630,8 +630,10 @@
                         //validate from the replacement node's parent (validator runs at end of next else statement)
                     }else{
                         console.log("Using right child as a replacement")
-                        $(this.rightLineId).remove();
-                        await this.right.bringChildren(old_x, old_y);
+                        if(this.right){
+                            $(this.rightLineId).remove();
+                            await this.right.bringChildren(old_x, old_y);
+                        }
                         //replace this node with its right child node (may be null)
                         if(this.parent && this.value > this.parent.value){
                             //I am a right child
@@ -653,15 +655,15 @@
                         }
                         //validate from this node up
                         if(this.right){
-                            conosle.log("setting validator to this.right");
+                            console.log("setting validator to this.right");
                             validator = this.right;
                         }
                         else if(this.parent){
-                            conosle.log("setting validator to this.parent");
+                            console.log("setting validator to this.parent");
                             validator = this.parent;
                         }
                         else{
-                            conosle.log("setting validator to null");
+                            console.log("setting validator to null");
                             validator = null;
                         }
                     }
