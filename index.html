@@ -51,6 +51,14 @@
             Random Tree
         </button>
 
+        <label for="speed">Animation speed:</label>
+        <select id="speed" name="speed">
+            <option value=2000>Slow</option>
+            <option value=500 selected>Normal</option>
+            <option value=200>Fast</option>
+            <option value=50>Instant</option>
+        </select>
+
     </div>
     <div id="message">
 
@@ -88,6 +96,7 @@
         var nodeIdCounter = 0;
         var lineIdCounter = 0;
         var canSubmit = true;
+        var animationSpeed = 500;
 
         function addNode(value, x, y){
             var nodeClass = "node_" + nodeIdCounter
@@ -112,14 +121,16 @@
 
         async function translateElements(identifier, x, y){
             //console.log("Translating Elements: " + identifier + ", " + x + ", " + y);
-            const duration = 500; //animation time in ms
-
+            const duration = parseInt(animationSpeed); //animation time in ms
+            console.log("Duration is " + duration + " based on " + animationSpeed);
             els = $(identifier);
 
             els.each((i, p) => {
                 el = $(p);
                 var old_x = el.attr("x") ?? el.attr("cx");
                 var old_y = el.attr("y") ?? el.attr("cy");
+
+                console.log(duration, x, y, old_x, old_y);
 
                 const animation = p.animate(
                     [
@@ -156,11 +167,11 @@
                 //console.log(identifier + " translation complete! new location: " + `(${el.attr('x') || el.attr('cx')},${el.attr('y') || el.attr('cy')})`);
             })
             
-            await new Promise(r => setTimeout(r,500));
+            await new Promise(r => setTimeout(r,animationSpeed));
             //console.log(identifier + " buffer complete");
         }
 
-        async function moveLine(identifier, x1, y1, x2, y2, duration=500){
+        async function moveLine(identifier, x1, y1, x2, y2, duration=animationSpeed){
             console.log("Moving Line " + identifier + " to location [(" + x1 +", " + y1 + ")(" + x2 + ", " + y2 + ")]");
             el = $(identifier);
             const old_x1 = parseFloat(el.attr("x1"));
@@ -216,7 +227,7 @@
                     var nodeClass = addNode(value, 0, 100);
                     message.text("Adding node: " + value);
                     //pause for dramatic effect
-                    await new Promise(r => setTimeout(r,500));
+                    await new Promise(r => setTimeout(r,animationSpeed));
                     const n = new Node(value, null, nodeClass);
                     if(root == null){
                         message.text("Adding new node at the root: " + n.value);
@@ -306,7 +317,7 @@
                         var nodeClass = addNode(v, 0, 100);
                         message.text("Adding node: " + v);
                         //pause for dramatic effect
-                        await new Promise(r => setTimeout(r,200));
+                        await new Promise(r => setTimeout(r,animationSpeed));
                         const n = new Node(v, null, nodeClass);
                         if(root == null){
                             message.text("Adding new node at the root: " + n.value);
@@ -331,6 +342,10 @@
                 }
             });
 
+            $("#speed").change(function(){
+                console.log("speed is " + $(this).val());
+                animationSpeed = $(this).val();
+            })
         });
 
         class Node {
@@ -449,7 +464,7 @@
                     }
 
                     //pause to show the user the state
-                    await new Promise(r => setTimeout(r,500));
+                    await new Promise(r => setTimeout(r,animationSpeed));
 
                     console.log("Validate Tree has chosen these nodes to fix a violation: ", k1, k2, k3);
                     await fixViolation(k1, k2, k3);
@@ -476,7 +491,7 @@
                         $("#inspector").attr('stroke', 'red');    
                         message.text(v + " could not be found");
                         //pause for effect
-                        await new Promise(r => setTimeout(r,500));
+                        await new Promise(r => setTimeout(r,animationSpeed));
                         //remove inspector
                         $("#inspector").remove();
                         canSubmit = true;
@@ -491,7 +506,7 @@
                         $("#inspector").attr('stroke', 'red');    
                         message.text(v + " could not be found");
                         //pause for effect
-                        await new Promise(r => setTimeout(r,500));
+                        await new Promise(r => setTimeout(r,animationSpeed));
                         //remove inspector
                         $("#inspector").remove();
                         canSubmit = true;
@@ -503,7 +518,7 @@
                     message.text("Found " + v);
                     $("#inspector").attr('stroke', 'green');
                     //pause for effect
-                    await new Promise(r => setTimeout(r,500));
+                    await new Promise(r => setTimeout(r,animationSpeed));
                     //delete inspector
                     $("#inspector").remove();
                     canSubmit = true;
@@ -573,7 +588,7 @@
                             $(this.parent.leftLineId).remove()
                         }
                     }
-                    await new Promise(r => setTimeout(r,500));
+                    await new Promise(r => setTimeout(r,animationSpeed));
                     var validator;
                     if (this.left){
                         message.text("Finding largest node in left subtree as replacement");
