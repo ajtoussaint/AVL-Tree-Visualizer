@@ -560,6 +560,7 @@
                         this.leftLineId = createLine(this.getX() - nodeEdge, this.getY() + nodeEdge, this.leftChildX() + nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         await this.validateTree();
+                        console.log("inserted " + n.value + " as left child of " + this.value);
                         canSubmit = true;
                     }else{
                         await this.left.insert(n);
@@ -579,6 +580,7 @@
                         this.rightLineId = createLine(this.getX() + nodeEdge, this.getY() + nodeEdge, this.rightChildX() - nodeEdge, 100 + this.getY() - nodeEdge);
                         //check for validity
                         await this.validateTree();
+                        console.log("inserted " + n.value + " as left child of " + this.value);
                         canSubmit = true;
                     }else{
                         await this.right.insert(n);
@@ -875,6 +877,7 @@
             var temp, temp1, temp2;
             
             if(firstIsRight && secondIsRight){
+                console.log("RR rotate");
                 //Right right rotation
                 message.text("Performing a Right-Right rotation to fix the violaiton");
                 //remove lines connected to k1s parent
@@ -952,6 +955,7 @@
                 }
                 
             }else if(firstIsRight && !secondIsRight){
+                console.log("RL rotate");
                 //Right left rotation
                 message.text("Performing a Right-Left rotation to fix the violation");
 
@@ -1041,6 +1045,7 @@
                     k2.leftLineId = createLine(k2.getX() - nodeEdge, k2.getY() + nodeEdge, k2.leftChildX() + nodeEdge, k2.getY() + 100 - nodeEdge)
                 }
             }else if(!firstIsRight && secondIsRight){
+                console.log("LR rotate");
                 //Left Right rotation
                 message.text("Performing a Left-Right rotation to fix the violation");
 
@@ -1132,6 +1137,7 @@
                 }
 
             }else{
+                console.log("LL rotate");
                 //Left left rotation
                 message.text("Performing a Left-Left rotation to fix the violation")
 
